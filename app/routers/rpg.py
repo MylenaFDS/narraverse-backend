@@ -1,0 +1,192 @@
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
+
+from app.db.session import get_db
+from app.models.rpg import RPG
+from app.models.rpg_participant import RPGParticipant
+from app.schemas.rpg import RPGCreate, RPGResponse
+from app.models.user import User
+from app.core.security import get_current_user
+
+
+router = APIRouter(prefix="/rpgs", tags=["RPGs"])
+
+
+@router.post("/", response_model=RPGResponse)
+def create_rpg(
+    rpg_data: RPGCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    # 1️⃣ Criar RPG
+    new_rpg = RPG(
+        name=rpg_data.name,
+        description=rpg_data.description,
+        owner_id=current_user.id,
+        allow_join_requests=rpg_data.allow_join_requests
+    )
+
+    db.add(new_rpg)
+    db.commit()
+    db.refresh(new_rpg)
+
+    # 2️⃣ Criador vira participante automaticamente
+    owner_participation = RPGParticipant(
+        user_id=current_user.id,
+        rpg_id=new_rpg.id,
+        status="accepted",
+        invited_by=current_user.id,
+    )
+
+    db.add(owner_participation)
+    db.commit()
+
+    return new_rpg
+
+
+@router.get("/me", response_model=list[RPGResponse])
+def get_my_rpgs(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    rpgs = (
+        db.query(RPG)
+        .join(RPGParticipant, RPGParticipant.rpg_id == RPG.id)
+        .filter(
+            RPGParticipant.user_id == current_user.id,
+            RPGParticipant.status == "accepted",
+        )
+        .all()
+    )
+
+    return rpgs
+
+
+@router.post("/{rpg_id}/request")
+def request_to_join(
+    rpg_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    # 1️⃣ Verificar se RPG existe
+    rpg = db.query(RPG).filter(RPG.id == rpg_id).first()
+
+    if not rpg:
+        raise HTTPException(status_code=404, detail="RPG não encontrado.")
+
+    # 2️⃣ Verificar se aceita pedidos
+    if not rpg.allow_join_requests:
+        raise HTTPException(
+            status_code=403,
+            detail="Este RPG não aceita pedidos de entrada."
+        )
+
+    # 3️⃣ Verificar se já existe participação
+    existing = (
+        db.query(RPGParticipant)
+        .filter(
+            RPGParticipant.rpg_id == rpg_id,
+            RPGParticipant.user_id == current_user.id,
+        )
+        .first()
+    )
+
+    if existing:
+        raise HTTPException(
+            status_code=400,
+            detail="Você já possui uma solicitação ou participação."
+        )
+
+    # 4️⃣ Criar solicitação
+    request = RPGParticipant(
+        user_id=current_user.id,
+        rpg_id=rpg_id,
+        status="pending",
+        invited_by=None,
+    )
+
+    db.add(request)
+    db.commit()
+
+    return {"message": "Solicitação enviada com sucesso."}
+
+
+@router.get("/{rpg_id}/requests")
+def list_pending_requests(
+    rpg_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    # 1️⃣ Verificar se RPG existe
+    rpg = db.query(RPG).filter(RPG.id == rpg_id).first()
+
+    if not rpg:
+        raise HTTPException(status_code=404, detail="RPG não encontrado.")
+
+    # 2️⃣ Verificar se é dono
+    if rpg.owner_id != current_user.id:
+        raise HTTPException(
+            status_code=403,
+            detail="Apenas o dono pode ver solicitações."
+        )
+
+    # 3️⃣ Buscar solicitações pendentes
+    pending_requests = (
+        db.query(RPGParticipant)
+        .filter(
+            RPGParticipant.rpg_id == rpg_id,
+            RPGParticipant.status == "pending",
+        )
+        .all()
+    )
+
+    return pending_requests
+
+
+@router.put("/{rpg_id}/participants/{user_id}")
+def update_participant_status(
+    rpg_id: int,
+    user_id: int,
+    status: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    # 1️⃣ Validar status
+    if status not in ["accepted", "rejected"]:
+        raise HTTPException(
+            status_code=400,
+            detail="Status inválido. Use 'accepted' ou 'rejected'."
+        )
+
+    # 2️⃣ Verificar RPG
+    rpg = db.query(RPG).filter(RPG.id == rpg_id).first()
+
+    if not rpg:
+        raise HTTPException(status_code=404, detail="RPG não encontrado.")
+
+    # 3️⃣ Verificar dono
+    if rpg.owner_id != current_user.id:
+        raise HTTPException(
+            status_code=403,
+            detail="Apenas o dono pode alterar participantes."
+        )
+
+    # 4️⃣ Buscar participante
+    participant = (
+        db.query(RPGParticipant)
+        .filter(
+            RPGParticipant.rpg_id == rpg_id,
+            RPGParticipant.user_id == user_id,
+            RPGParticipant.status == "pending",
+        )
+        .first()
+    )
+
+    if not participant:
+        raise HTTPException(status_code=404, detail="Solicitação não encontrada.")
+
+    # 5️⃣ Atualizar status
+    participant.status = status
+    db.commit()
+
+    return {"message": f"Solicitação {status} com sucesso."}

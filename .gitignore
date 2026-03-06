@@ -1,0 +1,42 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environment
+venv/
+venv311/
+.env/
+.env
+
+# Environment variables
+.env.local
+.env.development
+.env.production
+
+# Alembic cache
+*.log
+
+# VSCode
+.vscode/
+
+# PyCharm
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Test / coverage
+.coverage
+htmlcov/
+
+# Build
+build/
+dist/
+*.egg-info/
+
+# Logs
+*.log
+
