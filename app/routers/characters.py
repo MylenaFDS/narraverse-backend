@@ -2,17 +2,17 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
-from app.models.character import Character
 from app.models.rpg_participant import RPGParticipant
 from app.models.user import User
 from app.schemas.character import CharacterCreate, CharacterResponse
 from app.core.security import get_current_user
+from app.services.character_service import create_character, list_characters
 
 router = APIRouter(prefix="/characters", tags=["Characters"])
 
 
 @router.post("/{rpg_id}", response_model=CharacterResponse)
-def create_character(
+def create_character_route(
     rpg_id: int,
     character_data: CharacterCreate,
     db: Session = Depends(get_db),
@@ -24,7 +24,7 @@ def create_character(
         .filter(
             RPGParticipant.rpg_id == rpg_id,
             RPGParticipant.user_id == current_user.id,
-            RPGParticipant.status == "accepted",
+            RPGParticipant.status == "accepted"
         )
         .first()
     )
@@ -35,31 +35,12 @@ def create_character(
             detail="Você não participa deste RPG"
         )
 
-    character = Character(
-        name=character_data.name,
-        description=character_data.description,
-        sheet=character_data.sheet,
-        user_id=current_user.id,
-        rpg_id=rpg_id,
-    )
-
-    db.add(character)
-    db.commit()
-    db.refresh(character)
-
-    return character
+    return create_character(db, current_user.id, rpg_id, character_data)
 
 
 @router.get("/{rpg_id}", response_model=list[CharacterResponse])
-def list_characters(
+def list_characters_route(
     rpg_id: int,
     db: Session = Depends(get_db)
 ):
-
-    characters = (
-        db.query(Character)
-        .filter(Character.rpg_id == rpg_id)
-        .all()
-    )
-
-    return characters
+    return list_characters(db, rpg_id)

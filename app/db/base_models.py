@@ -10,3 +10,5 @@ from app.models.rpg_message import RPGMessage
 from app.models.rpg_lore import RPGLore
 from app.models.rpg_note import RPGNote
 from app.models.notification import Notification
+from app.models.rpg_sheet_field import RPGSheetField
+from app.models.character_sheet_value import CharacterSheetValue

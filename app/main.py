@@ -6,6 +6,8 @@ from app.routers import rpg
 from app.routers import rpg_turn
 from app.routers import characters
 from app.routers import rpg_chat
+from app.routers import rpg_sheet_fields
+from app.routers import character_sheets
 
 app = FastAPI()
 
@@ -16,4 +18,12 @@ app.include_router(rpg.router)
 app.include_router(rpg_turn.router)
 app.include_router(characters.router)
 app.include_router(rpg_chat.router)
+app.include_router(rpg_sheet_fields.router)
+app.include_router(character_sheets.router)
+
+
+
+
+
+
 
