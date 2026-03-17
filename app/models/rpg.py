@@ -20,6 +20,7 @@ class RPG(Base):
     allow_character_sheets = Column(Boolean, default=True)  # permite fichas
     allow_join_requests = Column(Boolean, default=True)  # usuários podem pedir entrada
     allow_free_turns = Column(Boolean, default=True)
+    allow_lore_suggestions = Column(Boolean, default=False)
 
     # sistema de turnos
     turn_mode = Column(

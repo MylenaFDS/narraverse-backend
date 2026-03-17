@@ -1,5 +1,5 @@
-from sqlalchemy import Column, Integer, String, Text, ForeignKey
-
+from sqlalchemy import Column, Integer, String, Text, ForeignKey, Boolean
+from sqlalchemy.orm import relationship
 from app.db.base import Base
 
 
@@ -13,3 +13,11 @@ class RPGLore(Base):
 
     rpg_id = Column(Integer, ForeignKey("rpgs.id"), nullable=False)
     author_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+
+    # 🔥 CONTROLE DE LORE
+    is_approved = Column(Boolean, default=False)
+    is_suggestion = Column(Boolean, default=False)
+
+    # RELATIONSHIPS
+    rpg = relationship("RPG")
+    author = relationship("User")

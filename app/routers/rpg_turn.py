@@ -7,6 +7,8 @@ from app.models.rpg_participant import RPGParticipant
 from app.models.user import User
 from app.schemas.rpg_turn import RPGTurnCreate, RPGTurnResponse
 from app.core.security import get_current_user
+from app.services.notification_service import create_notification
+
 
 router = APIRouter(prefix="/rpg-turns", tags=["RPG Turns"])
 
@@ -36,6 +38,8 @@ def create_turn(
             detail="Você não participa deste RPG"
         )
 
+    parent_turn = None
+
     # Verificar se o turno que está sendo respondido existe
     if turn_data.reply_to_turn_id:
         parent_turn = (
@@ -53,30 +57,53 @@ def create_turn(
                 detail="Turno que você está tentando responder não existe"
             )
 
+    # Criar turno
     turn = RPGTurn(
-    rpg_id=rpg_id,
-    user_id=current_user.id,
-    content=turn_data.content,
-    reply_to_turn_id=turn_data.reply_to_turn_id
-)
+        rpg_id=rpg_id,
+        user_id=current_user.id,
+        content=turn_data.content,
+        reply_to_turn_id=turn_data.reply_to_turn_id
+    )
 
-# adicionar menções
+    # Adicionar menções
     if turn_data.mentioned_participants:
 
         participants = (
-        db.query(RPGParticipant)
-        .filter(
-            RPGParticipant.id.in_(turn_data.mentioned_participants),
-            RPGParticipant.rpg_id == rpg_id
+            db.query(RPGParticipant)
+            .filter(
+                RPGParticipant.id.in_(turn_data.mentioned_participants),
+                RPGParticipant.rpg_id == rpg_id
+            )
+            .all()
         )
-        .all()
-    )
 
-    turn.mentioned_participants = participants
+        turn.mentioned_participants = participants
 
     db.add(turn)
     db.commit()
     db.refresh(turn)
+
+    # 🔔 Notificação de resposta de turno
+    if parent_turn and parent_turn.user_id != current_user.id:
+
+        create_notification(
+            db,
+            parent_turn.user_id,
+            f"{current_user.email} respondeu seu turno."
+        )
+
+    # 🔔 Notificação de menções
+    if turn_data.mentioned_participants:
+
+        for participant in turn.mentioned_participants:
+
+            if participant.user_id != current_user.id:
+
+                create_notification(
+                    db,
+                    participant.user_id,
+                    f"{current_user.email} mencionou você em um turno."
+                )
 
     return RPGTurnResponse(
         id=turn.id,
@@ -93,6 +120,7 @@ def list_turns(
     rpg_id: int,
     db: Session = Depends(get_db)
 ):
+
     turns = (
         db.query(RPGTurn)
         .filter(RPGTurn.rpg_id == rpg_id)
@@ -100,7 +128,21 @@ def list_turns(
         .all()
     )
 
-    return turns
+    result = []
+
+    for turn in turns:
+        result.append(
+            RPGTurnResponse(
+                id=turn.id,
+                content=turn.content,
+                user_id=turn.user_id,
+                created_at=turn.created_at,
+                reply_to_turn_id=turn.reply_to_turn_id,
+                mentioned_participants=[p.id for p in turn.mentioned_participants]
+            )
+        )
+
+    return result
 
 
 @router.get("/{rpg_id}/thread/{turn_id}", response_model=list[RPGTurnResponse])
@@ -137,4 +179,18 @@ def get_turn_thread(
         .all()
     )
 
-    return replies
+    result = []
+
+    for turn in replies:
+        result.append(
+            RPGTurnResponse(
+                id=turn.id,
+                content=turn.content,
+                user_id=turn.user_id,
+                created_at=turn.created_at,
+                reply_to_turn_id=turn.reply_to_turn_id,
+                mentioned_participants=[p.id for p in turn.mentioned_participants]
+            )
+        )
+
+    return result
