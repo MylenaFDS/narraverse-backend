@@ -1,9 +1,11 @@
 from pydantic import BaseModel
+from typing import List, Optional
 
 
 class RPGCreate(BaseModel):
     name: str
-    description: str | None = None
+    description: Optional[str] = None
+    tags: Optional[List[str]] = []
 
 
 class RPGResponse(BaseModel):

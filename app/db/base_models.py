@@ -13,3 +13,10 @@ from app.models.notification import Notification
 from app.models.rpg_sheet_field import RPGSheetField
 from app.models.character_sheet_value import CharacterSheetValue
 from app.models.notification import Notification
+from app.models.user import User
+from app.models.post import Post
+from app.models.rpg import RPG
+from app.models.rpg_participant import RPGParticipant
+from app.models.rpg_turn import RPGTurn
+from app.models.tag import Tag
+from app.models.rpg_tag import rpg_tags

@@ -9,7 +9,7 @@ class Character(Base):
 
     id = Column(Integer, primary_key=True, index=True)
 
-    name = Column(String(120), nullable=False)
+    name = Column(String(120), nullable=False, index=True)
     description = Column(Text, nullable=True)
     sheet = Column(Text, nullable=True)
 

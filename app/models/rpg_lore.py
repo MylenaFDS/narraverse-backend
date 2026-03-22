@@ -8,7 +8,7 @@ class RPGLore(Base):
 
     id = Column(Integer, primary_key=True, index=True)
 
-    title = Column(String(150), nullable=False)
+    title = Column(String(150), nullable=False, index=True)
     content = Column(Text, nullable=True)
 
     rpg_id = Column(Integer, ForeignKey("rpgs.id"), nullable=False)

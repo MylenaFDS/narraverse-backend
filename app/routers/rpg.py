@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.models.rpg import RPG
 from app.models.rpg_participant import RPGParticipant
+from app.models.tag import Tag
 from app.schemas.rpg import RPGCreate, RPGResponse
 from app.models.user import User
 from app.core.security import get_current_user
@@ -30,7 +31,27 @@ def create_rpg(
     db.commit()
     db.refresh(new_rpg)
 
-    # 2️⃣ Criador vira participante automaticamente
+    # 🔥 2️⃣ Adicionar TAGS
+    if rpg_data.tags:
+        tag_objects = []
+
+        for tag_name in rpg_data.tags:
+
+            tag = db.query(Tag).filter(Tag.name == tag_name).first()
+
+            if not tag:
+                tag = Tag(name=tag_name)
+                db.add(tag)
+                db.commit()
+                db.refresh(tag)
+
+            tag_objects.append(tag)
+
+        new_rpg.tags = tag_objects
+        db.commit()
+        db.refresh(new_rpg)
+
+    # 3️⃣ Criador vira participante automaticamente
     owner_participation = RPGParticipant(
         user_id=current_user.id,
         rpg_id=new_rpg.id,

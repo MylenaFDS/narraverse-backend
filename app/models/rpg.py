@@ -1,6 +1,8 @@
 from sqlalchemy import Column, Integer, String, Text, ForeignKey, Boolean
 from sqlalchemy.orm import relationship
 from app.db.base import Base
+from sqlalchemy.orm import relationship
+from app.models.rpg_tag import rpg_tags
 
 
 class RPG(Base):
@@ -8,7 +10,7 @@ class RPG(Base):
 
     id = Column(Integer, primary_key=True, index=True)
 
-    name = Column(String(150), nullable=False)
+    name = Column(String(150), nullable=False, index=True)
     description = Column(Text, nullable=True)
 
     owner_id = Column(Integer, ForeignKey("users.id"), nullable=False)
@@ -43,3 +45,5 @@ class RPG(Base):
         back_populates="rpg",
         cascade="all, delete-orphan"
     )
+
+    tags = relationship("Tag", secondary=rpg_tags, backref="rpgs")
