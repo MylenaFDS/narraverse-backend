@@ -3,10 +3,13 @@ from sqlalchemy.orm import Session
 from typing import List
 
 from app.db.deps import get_db
-from app.schemas.user import UserResponse, UserUpdate
+from app.schemas.user import UserResponse, UserUpdate, UserProfileResponse
 from app.services.user_service import UserService
 from app.core.security import get_current_user
 from app.models.user import User
+from app.models.rpg import RPG
+from app.models.rpg_participant import RPGParticipant
+
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
@@ -21,9 +24,49 @@ def list_users(
 
 
 # 🔹 USUÁRIO LOGADO
-@router.get("/me", response_model=UserResponse)
-def get_me(current_user: User = Depends(get_current_user)):
-    return current_user
+@router.get("/me", response_model=UserProfileResponse)
+def get_me(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    # RPGs criados
+    created = (
+        db.query(RPG)
+        .filter(RPG.owner_id == current_user.id)
+        .all()
+    )
+
+    # RPGs participando
+    participating = (
+        db.query(RPG)
+        .join(RPGParticipant)
+        .filter(
+            RPGParticipant.user_id == current_user.id,
+            RPGParticipant.status == "accepted"
+        )
+        .all()
+    )
+
+    return {
+        **current_user.__dict__,
+        "created_rpgs": created,
+        "participating_rpgs": participating
+    }
+
+
+# 🔥 🔹 ATUALIZAR PERFIL (MELHOR PRÁTICA)
+@router.put("/me", response_model=UserResponse)
+def update_me(
+    user_data: UserUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    updated_user = UserService.update(db, current_user.id, user_data)
+
+    if not updated_user:
+        raise HTTPException(status_code=404, detail="Usuário não encontrado")
+
+    return updated_user
 
 
 # 🔹 BUSCAR POR ID
@@ -41,7 +84,7 @@ def get_user(
     return user
 
 
-# 🔹 ATUALIZAR
+# 🔹 ATUALIZAR (mantido, mas menos usado agora)
 @router.put("/{user_id}", response_model=UserResponse)
 def update_user(
     user_id: int,
@@ -49,7 +92,6 @@ def update_user(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    # 🔒 Impede editar outro usuário
     if current_user.id != user_id:
         raise HTTPException(status_code=403, detail="Acesso negado")
 
@@ -68,7 +110,6 @@ def delete_user(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    # 🔒 Impede deletar outro usuário
     if current_user.id != user_id:
         raise HTTPException(status_code=403, detail="Acesso negado")
 

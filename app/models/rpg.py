@@ -1,7 +1,6 @@
 from sqlalchemy import Column, Integer, String, Text, ForeignKey, Boolean
 from sqlalchemy.orm import relationship
 from app.db.base import Base
-from sqlalchemy.orm import relationship
 from app.models.rpg_tag import rpg_tags
 
 
@@ -13,32 +12,20 @@ class RPG(Base):
     name = Column(String(150), nullable=False, index=True)
     description = Column(Text, nullable=True)
 
-    owner_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    # 🔥 APENAS UM DONO
+    owner_id = Column(Integer, ForeignKey("users.id"))
 
-    # CONFIGURAÇÕES DO RPG (definidas pelo criador)
+    owner = relationship("User", back_populates="owned_rpgs")
 
-    has_gm = Column(Boolean, default=False)  # RPG possui mestre
-    allow_chat = Column(Boolean, default=True)  # existe chat separado
-    allow_character_sheets = Column(Boolean, default=True)  # permite fichas
-    allow_join_requests = Column(Boolean, default=True)  # usuários podem pedir entrada
+    # CONFIGURAÇÕES
+    has_gm = Column(Boolean, default=False)
+    allow_chat = Column(Boolean, default=True)
+    allow_character_sheets = Column(Boolean, default=True)
+    allow_join_requests = Column(Boolean, default=True)
     allow_free_turns = Column(Boolean, default=True)
     allow_lore_suggestions = Column(Boolean, default=False)
 
-    # sistema de turnos
-    turn_mode = Column(
-        String(20),
-        default="free"
-    )
-    # opções possíveis:
-    # "free" = turnos livres estilo fórum
-    # "ordered" = ordem de turnos definida
-
-    # RELACIONAMENTOS
-
-    owner = relationship(
-        "User",
-        back_populates="owned_rpgs"
-    )
+    turn_mode = Column(String(20), default="free")
 
     participants = relationship(
         "RPGParticipant",
