@@ -24,35 +24,26 @@ def list_users(
 
 
 # 🔹 USUÁRIO LOGADO
-@router.get("/me", response_model=UserProfileResponse)
-def get_me(
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-    # RPGs criados
-    created = (
-        db.query(RPG)
-        .filter(RPG.owner_id == current_user.id)
-        .all()
-    )
+@router.get("/me")
+def get_me(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    
+    owned_rpgs = db.query(RPG).filter(RPG.owner_id == current_user.id).all()
 
-    # RPGs participando
     participating = (
         db.query(RPG)
         .join(RPGParticipant)
-        .filter(
-            RPGParticipant.user_id == current_user.id,
-            RPGParticipant.status == "accepted"
-        )
+        .filter(RPGParticipant.user_id == current_user.id)
         .all()
     )
 
     return {
-        **current_user.__dict__,
-        "created_rpgs": created,
+        "id": current_user.id,
+        "username": current_user.username,
+        "email": current_user.email,
+        "bio": current_user.bio,
+        "owned_rpgs": owned_rpgs,  # 🔥 ESSENCIAL
         "participating_rpgs": participating
     }
-
 
 # 🔥 🔹 ATUALIZAR PERFIL (MELHOR PRÁTICA)
 @router.put("/me", response_model=UserResponse)
