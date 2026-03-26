@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import func, select
 from datetime import datetime, timedelta
 from typing import Optional
 
@@ -19,13 +19,14 @@ def get_feed(
     tag: Optional[str] = Query(None),
     db: Session = Depends(get_db)
 ):
-
     # 🔎 Buscar tag (se existir)
     tag_obj = None
     if tag:
         tag_obj = db.query(Tag).filter(Tag.name == tag).first()
 
+    # =========================
     # 🔥 RECENTES
+    # =========================
     recent_query = db.query(RPG)
 
     if tag_obj:
@@ -38,7 +39,9 @@ def get_feed(
         .all()
     )
 
+    # =========================
     # 🔥 POPULARES
+    # =========================
     popular_query = (
         db.query(
             RPG,
@@ -59,12 +62,14 @@ def get_feed(
         .all()
     )
 
+    # =========================
     # 🔥 ATIVOS (últimas 24h)
+    # =========================
     one_day_ago = datetime.utcnow() - timedelta(days=1)
 
     active_ids_query = (
-        db.query(RPGTurn.rpg_id)
-        .filter(RPGTurn.created_at >= one_day_ago)
+        select(RPGTurn.rpg_id)
+        .where(RPGTurn.created_at >= one_day_ago)
         .distinct()
     )
 
@@ -73,19 +78,19 @@ def get_feed(
             active_ids_query
             .join(RPG, RPG.id == RPGTurn.rpg_id)
             .join(RPG.tags)
-            .filter(Tag.id == tag_obj.id)
+            .where(Tag.id == tag_obj.id)
         )
-
-    active_rpg_ids = active_ids_query.subquery()
 
     active_rpgs = (
         db.query(RPG)
-        .filter(RPG.id.in_(active_rpg_ids))
+        .filter(RPG.id.in_(active_ids_query))  # ✅ sem warning agora
         .limit(10)
         .all()
     )
 
+    # =========================
     # 🔧 Função auxiliar
+    # =========================
     def build_rpg_response(rpg, participants_count=0, recent_activity=False):
         return FeedRPG(
             id=rpg.id,
@@ -95,7 +100,9 @@ def get_feed(
             recent_activity=recent_activity
         )
 
+    # =========================
     # 🔄 Montar resposta
+    # =========================
     recent = [
         build_rpg_response(rpg)
         for rpg in recent_rpgs
