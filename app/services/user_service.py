@@ -16,16 +16,17 @@ class UserService:
         return UserRepository.create(db, username, email, password_hash)
 
     @staticmethod
-    def login(db: Session, email: str, password: str):
-        user = UserRepository.get_by_email(db, email)
+   
+    def authenticate(db: Session, email: str, password: str):
+        user = db.query(User).filter(User.email == email).first()
+
         if not user:
-            raise ValueError("Credenciais inválidas")
+            return None
 
         if not verify_password(password, user.password_hash):
-            raise ValueError("Credenciais inválidas")
+            return None
 
-        token = create_access_token({"sub": str(user.id)})
-        return token
+        return user
 
     @staticmethod
     def get_all(db: Session):
