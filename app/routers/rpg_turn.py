@@ -8,13 +8,13 @@ from app.models.user import User
 from app.schemas.rpg_turn import RPGTurnCreate, RPGTurnResponse
 from app.core.security import get_current_user
 from app.services.notification_service import create_notification
-
+from app.websockets.manager import manager
 
 router = APIRouter(prefix="/rpg-turns", tags=["RPG Turns"])
 
 
 @router.post("/{rpg_id}", response_model=RPGTurnResponse)
-def create_turn(
+async def create_turn(
     rpg_id: int,
     turn_data: RPGTurnCreate,
     db: Session = Depends(get_db),
@@ -82,7 +82,18 @@ def create_turn(
     db.add(turn)
     db.commit()
     db.refresh(turn)
-
+    # 🔥 REALTIME (envia para todos conectados)
+    await manager.broadcast(rpg_id, {
+        "type": "new_turn",
+        "data": {
+            "id": turn.id,
+            "content": turn.content,
+            "user_id": turn.user_id,
+            "created_at": str(turn.created_at),
+            "reply_to_turn_id": turn.reply_to_turn_id,
+            "mentioned_participants": [p.id for p in turn.mentioned_participants]
+        }
+    })
     # 🔔 Notificação de resposta de turno
     if parent_turn and parent_turn.user_id != current_user.id:
 
