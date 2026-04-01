@@ -13,6 +13,7 @@ from app.routers import character_sheets
 from app.routers import notifications
 from app.routers import search
 from app.routers import feed
+from app.websockets.rpg_ws import router as ws_router
 
 app = FastAPI()
 
@@ -37,6 +38,7 @@ app.include_router(character_sheets.router)
 app.include_router(notifications.router)
 app.include_router(search.router)
 app.include_router(feed.router)
+app.include_router(ws_router)
 
 
 

@@ -11,7 +11,8 @@ class ConnectionManager:
         self.rooms.setdefault(rpg_id, []).append(websocket)
 
     def disconnect(self, websocket: WebSocket, rpg_id: int):
-        self.rooms[rpg_id].remove(websocket)
+        if rpg_id in self.rooms and websocket in self.rooms[rpg_id]:
+            self.rooms[rpg_id].remove(websocket)
 
     async def broadcast(self, rpg_id: int, message: dict):
         for connection in self.rooms.get(rpg_id, []):
