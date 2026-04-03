@@ -217,11 +217,11 @@ def delete_turn(
     if not turn:
         raise HTTPException(status_code=404, detail="Turno não encontrado")
 
-    # 🔒 só o dono pode deletar
     if turn.user_id != current_user.id:
         raise HTTPException(status_code=403, detail="Sem permissão")
 
-    db.delete(turn)
+    # 🔥 DELETE DIRETO (resolve seu problema)
+    db.query(RPGTurn).filter(RPGTurn.id == turn_id).delete()
     db.commit()
 
     return {"message": "Turno deletado com sucesso"}
