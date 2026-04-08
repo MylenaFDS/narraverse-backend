@@ -55,10 +55,13 @@ def login(
         refresh_token = create_refresh_token({"sub": str(user.id)})
 
         return {
-            "access_token": access_token,
-            "refresh_token": refresh_token,
-            "token_type": "bearer"
-        }
+    "access_token": access_token,
+    "token_type": "bearer",
+    "user": {
+        "id": user.id,
+        "email": user.email
+    }
+}
 
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))

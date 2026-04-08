@@ -211,3 +211,14 @@ def update_participant_status(
     db.commit()
 
     return {"message": f"Solicitação {status} com sucesso."}
+@router.get("/{rpg_id}", response_model=RPGResponse)
+def get_rpg_by_id(
+    rpg_id: int,
+    db: Session = Depends(get_db),
+):
+    rpg = db.query(RPG).filter(RPG.id == rpg_id).first()
+
+    if not rpg:
+        raise HTTPException(status_code=404, detail="RPG não encontrado")
+
+    return rpg
