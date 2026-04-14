@@ -1,5 +1,6 @@
-from sqlalchemy import Column, Integer, Text, ForeignKey
+from sqlalchemy import Column, Integer, String, ForeignKey
 from sqlalchemy.orm import relationship
+
 from app.db.base import Base
 
 
@@ -11,7 +12,7 @@ class CharacterSheetValue(Base):
     character_id = Column(Integer, ForeignKey("characters.id"))
     field_id = Column(Integer, ForeignKey("rpg_sheet_fields.id"))
 
-    value = Column(Text)
+    value = Column(String, nullable=False)
 
-    character = relationship("Character")
+    character = relationship("Character", back_populates="sheet_values")
     field = relationship("RPGSheetField")

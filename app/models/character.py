@@ -9,16 +9,20 @@ class Character(Base):
 
     id = Column(Integer, primary_key=True, index=True)
 
-    name = Column(String(120), nullable=False, index=True)
+    name = Column(String(120), nullable=False)
     description = Column(Text, nullable=True)
+
+    # ⚠️ mantém por compatibilidade (pode remover depois com migração)
     sheet = Column(Text, nullable=True)
 
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
-    rpg_id = Column(Integer, ForeignKey("rpgs.id"), nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    rpg_id = Column(Integer, ForeignKey("rpgs.id"), nullable=False)
 
     owner = relationship("User")
-
     rpg = relationship("RPG")
+
+    # 🔥 NOVO
+    sheet_values = relationship("CharacterSheetValue", back_populates="character")
 
     __table_args__ = (
         Index("idx_character_rpg_user", "rpg_id", "user_id"),
