@@ -16,19 +16,17 @@ router = APIRouter(prefix="/character-sheets", tags=["Character Sheets"])
 
 
 @router.post("/{character_id}", response_model=CharacterSheetValueResponse)
-def fill_character_sheet(
+def upsert_character_sheet(
     character_id: int,
     data: CharacterSheetValueCreate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-
     character = db.query(Character).filter(Character.id == character_id).first()
 
     if not character:
         raise HTTPException(status_code=404, detail="Personagem não encontrado")
 
-    # verificar se usuário participa do RPG
     participant = (
         db.query(RPGParticipant)
         .filter(
@@ -40,23 +38,36 @@ def fill_character_sheet(
     )
 
     if not participant:
-        raise HTTPException(
-            status_code=403,
-            detail="Você não participa deste RPG"
-        )
+        raise HTTPException(status_code=403, detail="Sem acesso")
 
-    sheet_value = CharacterSheetValue(
+    # 🔥 VERIFICA SE JÁ EXISTE
+    existing = (
+        db.query(CharacterSheetValue)
+        .filter(
+            CharacterSheetValue.character_id == character_id,
+            CharacterSheetValue.field_id == data.field_id
+        )
+        .first()
+    )
+
+    if existing:
+        existing.value = data.value
+        db.commit()
+        db.refresh(existing)
+        return existing
+
+    # 🔥 SENÃO CRIA
+    new_value = CharacterSheetValue(
         character_id=character_id,
         field_id=data.field_id,
         value=data.value
     )
 
-    db.add(sheet_value)
+    db.add(new_value)
     db.commit()
-    db.refresh(sheet_value)
+    db.refresh(new_value)
 
-    return sheet_value
-
+    return new_value
 
 @router.get("/{character_id}", response_model=list[CharacterSheetValueResponse])
 def get_character_sheet(
