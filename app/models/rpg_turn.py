@@ -24,6 +24,7 @@ class RPGTurn(Base):
     content = Column(Text, nullable=False)
 
     created_at = Column(DateTime, default=datetime.utcnow, index=True)
+    character_id = Column(Integer, ForeignKey("characters.id"), nullable=True)
 
     reply_to_turn_id = Column(Integer, ForeignKey("rpg_turns.id"), nullable=True, index=True)
 
@@ -32,7 +33,8 @@ class RPGTurn(Base):
     rpg = relationship("RPG")
 
     user = relationship("User")
-
+    
+    character = relationship ("Character")
     # relação pai/filho dos turnos
     parent_turn = relationship(
         "RPGTurn",

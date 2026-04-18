@@ -62,7 +62,8 @@ async def create_turn(
         rpg_id=rpg_id,
         user_id=current_user.id,
         content=turn_data.content,
-        reply_to_turn_id=turn_data.reply_to_turn_id
+        reply_to_turn_id=turn_data.reply_to_turn_id,
+        character_id=turn_data.character_id
     )
 
     # Adicionar menções
@@ -91,7 +92,8 @@ async def create_turn(
             "user_id": turn.user_id,
             "created_at": str(turn.created_at),
             "reply_to_turn_id": turn.reply_to_turn_id,
-            "mentioned_participants": [p.id for p in turn.mentioned_participants]
+            "mentioned_participants": [p.id for p in turn.mentioned_participants],
+            "character_id": turn.character_id
         }
     })
     # 🔔 Notificação de resposta de turno
@@ -122,7 +124,8 @@ async def create_turn(
         user_id=turn.user_id,
         created_at=turn.created_at,
         reply_to_turn_id=turn.reply_to_turn_id,
-        mentioned_participants=[p.id for p in turn.mentioned_participants]
+        mentioned_participants=[p.id for p in turn.mentioned_participants],
+        character_id=turn.character_id
     )
 
 
@@ -149,7 +152,8 @@ def list_turns(
                 user_id=turn.user_id,
                 created_at=turn.created_at,
                 reply_to_turn_id=turn.reply_to_turn_id,
-                mentioned_participants=[p.id for p in turn.mentioned_participants]
+                mentioned_participants=[p.id for p in turn.mentioned_participants],
+                character_id=turn.character_id
             )
         )
 
@@ -200,7 +204,8 @@ def get_turn_thread(
                 user_id=turn.user_id,
                 created_at=turn.created_at,
                 reply_to_turn_id=turn.reply_to_turn_id,
-                mentioned_participants=[p.id for p in turn.mentioned_participants]
+                mentioned_participants=[p.id for p in turn.mentioned_participants],
+                character_id=turn.character_id
             )
         )
 
