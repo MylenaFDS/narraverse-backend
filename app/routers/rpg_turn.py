@@ -21,7 +21,11 @@ async def create_turn(
     current_user: User = Depends(get_current_user),
 ):
 
-    # Verificar se usuário participa do RPG
+    from app.models.character import Character
+
+    # ===============================
+    # VERIFICA PARTICIPAÇÃO
+    # ===============================
     participant = (
         db.query(RPGParticipant)
         .filter(
@@ -38,9 +42,27 @@ async def create_turn(
             detail="Você não participa deste RPG"
         )
 
+    # ===============================
+    # BUSCAR PERSONAGEM AUTOR
+    # ===============================
+    author_character = None
+
+    if turn_data.character_id:
+        author_character = db.query(Character).filter(
+            Character.id == turn_data.character_id
+        ).first()
+
+        if not author_character:
+            raise HTTPException(status_code=404, detail="Personagem não encontrado")
+
+        if author_character.user_id != current_user.id:
+            raise HTTPException(status_code=403, detail="Esse personagem não é seu")
+
+    # ===============================
+    # VALIDAR RESPOSTA
+    # ===============================
     parent_turn = None
 
-    # Verificar se o turno que está sendo respondido existe
     if turn_data.reply_to_turn_id:
         parent_turn = (
             db.query(RPGTurn)
@@ -57,18 +79,22 @@ async def create_turn(
                 detail="Turno que você está tentando responder não existe"
             )
 
-    # Criar turno
+    # ===============================
+    # CRIAR TURNO
+    # ===============================
     turn = RPGTurn(
         rpg_id=rpg_id,
         user_id=current_user.id,
         content=turn_data.content,
         reply_to_turn_id=turn_data.reply_to_turn_id,
-        character_id=turn_data.character_id
+        character_id=turn_data.character_id,
+        mentioned_characters=turn_data.mentioned_characters or []
     )
 
-    # Adicionar menções
+    # ===============================
+    # MENÇÕES (LEGADO)
+    # ===============================
     if turn_data.mentioned_participants:
-
         participants = (
             db.query(RPGParticipant)
             .filter(
@@ -83,7 +109,10 @@ async def create_turn(
     db.add(turn)
     db.commit()
     db.refresh(turn)
-    # 🔥 REALTIME (envia para todos conectados)
+
+    # ===============================
+    # 🔥 WEBSOCKET
+    # ===============================
     await manager.broadcast(rpg_id, {
         "type": "new_turn",
         "data": {
@@ -93,31 +122,66 @@ async def create_turn(
             "created_at": str(turn.created_at),
             "reply_to_turn_id": turn.reply_to_turn_id,
             "mentioned_participants": [p.id for p in turn.mentioned_participants],
+            "mentioned_characters": turn.mentioned_characters or [],
             "character_id": turn.character_id
         }
     })
-    # 🔔 Notificação de resposta de turno
-    if parent_turn and parent_turn.user_id != current_user.id:
 
+    # ===============================
+    # 🔔 NOTIFICAÇÕES
+    # ===============================
+    actor_name = (
+        author_character.name if author_character else current_user.email
+    )
+
+    notified_users = set()
+
+    # 🔔 RESPOSTA
+    if parent_turn and parent_turn.user_id != current_user.id:
         create_notification(
             db,
             parent_turn.user_id,
-            f"{current_user.email} respondeu seu turno."
+            f"{actor_name} respondeu seu turno."
         )
+        notified_users.add(parent_turn.user_id)
 
-    # 🔔 Notificação de menções
-    if turn_data.mentioned_participants:
-
+    # 🔔 MENÇÕES (LEGADO)
+    if turn.mentioned_participants:
         for participant in turn.mentioned_participants:
-
-            if participant.user_id != current_user.id:
-
+            if (
+                participant.user_id != current_user.id
+                and participant.user_id not in notified_users
+            ):
                 create_notification(
                     db,
                     participant.user_id,
-                    f"{current_user.email} mencionou você em um turno."
+                    f"{actor_name} mencionou você em um turno."
                 )
+                notified_users.add(participant.user_id)
 
+    # 🔔 MENÇÕES (PERSONAGENS - OTIMIZADO)
+    if turn.mentioned_characters:
+        characters = (
+            db.query(Character)
+            .filter(Character.id.in_(turn.mentioned_characters))
+            .all()
+        )
+
+        for char in characters:
+            if (
+                char.user_id != current_user.id
+                and char.user_id not in notified_users
+            ):
+                create_notification(
+                    db,
+                    char.user_id,
+                    f"{actor_name} mencionou {char.name}."
+                )
+                notified_users.add(char.user_id)
+
+    # ===============================
+    # RESPONSE
+    # ===============================
     return RPGTurnResponse(
         id=turn.id,
         content=turn.content,
@@ -125,9 +189,9 @@ async def create_turn(
         created_at=turn.created_at,
         reply_to_turn_id=turn.reply_to_turn_id,
         mentioned_participants=[p.id for p in turn.mentioned_participants],
+        mentioned_characters=turn.mentioned_characters or [],
         character_id=turn.character_id
     )
-
 
 @router.get("/{rpg_id}", response_model=list[RPGTurnResponse])
 def list_turns(
@@ -153,6 +217,7 @@ def list_turns(
                 created_at=turn.created_at,
                 reply_to_turn_id=turn.reply_to_turn_id,
                 mentioned_participants=[p.id for p in turn.mentioned_participants],
+                mentioned_characters=turn.mentioned_characters or [],
                 character_id=turn.character_id
             )
         )

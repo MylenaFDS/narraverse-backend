@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, Text, ForeignKey, DateTime, Table, Index
+from sqlalchemy import Column, Integer, Text, ForeignKey, DateTime, Table, Index, JSON
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from app.db.base import Base
@@ -24,7 +24,12 @@ class RPGTurn(Base):
     content = Column(Text, nullable=False)
 
     created_at = Column(DateTime, default=datetime.utcnow, index=True)
+
+    # personagem que escreveu o turno
     character_id = Column(Integer, ForeignKey("characters.id"), nullable=True)
+
+    # 🔥 NOVO → personagens mencionados
+    mentioned_characters = Column(JSON, default=[])
 
     reply_to_turn_id = Column(Integer, ForeignKey("rpg_turns.id"), nullable=True, index=True)
 
@@ -34,7 +39,8 @@ class RPGTurn(Base):
 
     user = relationship("User")
     
-    character = relationship ("Character")
+    character = relationship("Character")
+
     # relação pai/filho dos turnos
     parent_turn = relationship(
         "RPGTurn",
@@ -42,7 +48,7 @@ class RPGTurn(Base):
         backref="replies"
     )
 
-    # participantes mencionados
+    # participantes mencionados (mantido)
     mentioned_participants = relationship(
         "RPGParticipant",
         secondary=turn_mentions
