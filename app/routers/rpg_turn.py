@@ -106,7 +106,10 @@ async def create_turn(
     # ===============================
     # 📡 BROADCAST (RPG ROOM)
     # ===============================
-    await manager.broadcast(rpg_id, {
+    await manager.broadcast(
+    rpg_id,
+    "turns",
+    {
         "type": "new_turn",
         "data": {
             "id": turn.id,
@@ -118,7 +121,8 @@ async def create_turn(
             "mentioned_characters": turn.mentioned_characters or [],
             "character_id": turn.character_id
         }
-    })
+    }
+)
 
     # ===============================
     # 🔔 NOTIFICAÇÕES
