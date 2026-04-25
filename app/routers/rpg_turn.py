@@ -151,7 +151,7 @@ async def create_turn(
 
         notified_users.add(parent_turn.user_id)
 
-    # 🔔 MENÇÕES POR PERSONAGENS (AGRUPADO)
+    # 🔔 MENÇÕES (PERSONAGENS AGRUPADAS POR USUÁRIO)
     if turn.mentioned_characters:
 
         characters = (
@@ -160,59 +160,51 @@ async def create_turn(
             .all()
         )
 
-        # 🔥 AGRUPAR POR USER
-        users_map = {}
+        # agrupar por usuário
+        user_mentions = {}
 
         for char in characters:
             if char.user_id == current_user.id:
-                continue  # não notifica a si mesmo
+                continue
 
-            if char.user_id not in users_map:
-                users_map[char.user_id] = []
+            user_mentions.setdefault(char.user_id, []).append(char.name)
 
-            users_map[char.user_id].append(char.name)
-
-        for user_id, names in users_map.items():
+        for user_id, names in user_mentions.items():
 
             if user_id in notified_users:
                 continue
 
-            # 🎯 FORMATAR TEXTO BONITO
+            # montar frase bonita
             if len(names) == 1:
-                mention_text = names[0]
-            elif len(names) == 2:
-                mention_text = f"{names[0]} e {names[1]}"
+                text = f"{actor_name} mencionou {names[0]}"
             else:
-                mention_text = ", ".join(names[:-1]) + f" e {names[-1]}"
+                text = f"{actor_name} mencionou {', '.join(names[:-1])} e {names[-1]}"
 
-            message = f"{actor_name} mencionou {mention_text}"
-
-            create_notification(db, user_id, message)
+            create_notification(db, user_id, text)
 
             await manager.send_to_user(
                 user_id,
                 {
                     "type": "notification",
-                    "message": message,
+                    "message": text,
                     "turn_id": turn.id
                 }
             )
 
             notified_users.add(user_id)
-
-    # ===============================
-    # RESPONSE
-    # ===============================
-    return RPGTurnResponse(
-        id=turn.id,
-        content=turn.content,
-        user_id=turn.user_id,
-        created_at=turn.created_at,
-        reply_to_turn_id=turn.reply_to_turn_id,
-        mentioned_participants=[p.id for p in turn.mentioned_participants],
-        mentioned_characters=turn.mentioned_characters or [],
-        character_id=turn.character_id
-    )
+        # ===============================
+        # RESPONSE
+        # ===============================
+        return RPGTurnResponse(
+            id=turn.id,
+            content=turn.content,
+            user_id=turn.user_id,
+            created_at=turn.created_at,
+            reply_to_turn_id=turn.reply_to_turn_id,
+            mentioned_participants=[p.id for p in turn.mentioned_participants],
+            mentioned_characters=turn.mentioned_characters or [],
+            character_id=turn.character_id
+        )
 
 
 # ===============================
