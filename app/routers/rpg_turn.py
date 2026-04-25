@@ -36,10 +36,7 @@ async def create_turn(
     )
 
     if not participant:
-        raise HTTPException(
-            status_code=403,
-            detail="Você não participa deste RPG"
-        )
+        raise HTTPException(403, "Você não participa deste RPG")
 
     # ===============================
     # PERSONAGEM AUTOR
@@ -87,7 +84,9 @@ async def create_turn(
         mentioned_characters=turn_data.mentioned_characters or []
     )
 
-    # LEGADO
+    print("MENTIONS RECEBIDAS:", turn.mentioned_characters)
+
+    # LEGADO (mantido)
     if turn_data.mentioned_participants:
         participants = (
             db.query(RPGParticipant)
@@ -104,25 +103,25 @@ async def create_turn(
     db.refresh(turn)
 
     # ===============================
-    # 📡 BROADCAST (RPG ROOM)
+    # 📡 BROADCAST
     # ===============================
     await manager.broadcast(
-    rpg_id,
-    "turns",
-    {
-        "type": "new_turn",
-        "data": {
-            "id": turn.id,
-            "content": turn.content,
-            "user_id": turn.user_id,
-            "created_at": str(turn.created_at),
-            "reply_to_turn_id": turn.reply_to_turn_id,
-            "mentioned_participants": [p.id for p in turn.mentioned_participants],
-            "mentioned_characters": turn.mentioned_characters or [],
-            "character_id": turn.character_id
+        rpg_id,
+        "turns",
+        {
+            "type": "new_turn",
+            "data": {
+                "id": turn.id,
+                "content": turn.content,
+                "user_id": turn.user_id,
+                "created_at": str(turn.created_at),
+                "reply_to_turn_id": turn.reply_to_turn_id,
+                "mentioned_participants": [p.id for p in turn.mentioned_participants],
+                "mentioned_characters": turn.mentioned_characters or [],
+                "character_id": turn.character_id
+            }
         }
-    }
-)
+    )
 
     # ===============================
     # 🔔 NOTIFICAÇÕES
@@ -135,14 +134,12 @@ async def create_turn(
 
     # 🔔 RESPOSTA
     if parent_turn and parent_turn.user_id != current_user.id:
-
         create_notification(
             db,
             parent_turn.user_id,
             f"{actor_name} respondeu seu turno."
         )
 
-        # 🚀 tempo real
         await manager.send_to_user(
             parent_turn.user_id,
             {
@@ -154,32 +151,7 @@ async def create_turn(
 
         notified_users.add(parent_turn.user_id)
 
-    # 🔔 MENÇÕES (LEGADO)
-    if turn.mentioned_participants:
-        for participant in turn.mentioned_participants:
-
-            if (
-                participant.user_id != current_user.id
-                and participant.user_id not in notified_users
-            ):
-                create_notification(
-                    db,
-                    participant.user_id,
-                    f"{actor_name} mencionou você."
-                )
-
-                await manager.send_to_user(
-                    participant.user_id,
-                    {
-                        "type": "notification",
-                        "message": f"{actor_name} mencionou você",
-                        "turn_id": turn.id
-                    }
-                )
-
-                notified_users.add(participant.user_id)
-
-    # 🔔 MENÇÕES (PERSONAGENS)
+    # 🔔 MENÇÕES POR PERSONAGENS (AGRUPADO)
     if turn.mentioned_characters:
 
         characters = (
@@ -188,29 +160,45 @@ async def create_turn(
             .all()
         )
 
+        # 🔥 AGRUPAR POR USER
+        users_map = {}
+
         for char in characters:
+            if char.user_id == current_user.id:
+                continue  # não notifica a si mesmo
 
-            if (
-                char.user_id != current_user.id
-                and char.user_id not in notified_users
-            ):
-                create_notification(
-                    db,
-                    char.user_id,
-                    f"{actor_name} mencionou {char.name}."
-                )
+            if char.user_id not in users_map:
+                users_map[char.user_id] = []
 
-                # 🚀 TEMPO REAL
-                await manager.send_to_user(
-                    char.user_id,
-                    {
-                        "type": "notification",
-                        "message": f"{actor_name} mencionou {char.name}",
-                        "turn_id": turn.id
-                    }
-                )
+            users_map[char.user_id].append(char.name)
 
-                notified_users.add(char.user_id)
+        for user_id, names in users_map.items():
+
+            if user_id in notified_users:
+                continue
+
+            # 🎯 FORMATAR TEXTO BONITO
+            if len(names) == 1:
+                mention_text = names[0]
+            elif len(names) == 2:
+                mention_text = f"{names[0]} e {names[1]}"
+            else:
+                mention_text = ", ".join(names[:-1]) + f" e {names[-1]}"
+
+            message = f"{actor_name} mencionou {mention_text}"
+
+            create_notification(db, user_id, message)
+
+            await manager.send_to_user(
+                user_id,
+                {
+                    "type": "notification",
+                    "message": message,
+                    "turn_id": turn.id
+                }
+            )
+
+            notified_users.add(user_id)
 
     # ===============================
     # RESPONSE
@@ -231,10 +219,7 @@ async def create_turn(
 # LISTAR TURNOS
 # ===============================
 @router.get("/{rpg_id}", response_model=list[RPGTurnResponse])
-def list_turns(
-    rpg_id: int,
-    db: Session = Depends(get_db)
-):
+def list_turns(rpg_id: int, db: Session = Depends(get_db)):
     turns = (
         db.query(RPGTurn)
         .filter(RPGTurn.rpg_id == rpg_id)
@@ -261,11 +246,7 @@ def list_turns(
 # THREAD
 # ===============================
 @router.get("/{rpg_id}/thread/{turn_id}", response_model=list[RPGTurnResponse])
-def get_turn_thread(
-    rpg_id: int,
-    turn_id: int,
-    db: Session = Depends(get_db)
-):
+def get_turn_thread(rpg_id: int, turn_id: int, db: Session = Depends(get_db)):
     parent = (
         db.query(RPGTurn)
         .filter(
