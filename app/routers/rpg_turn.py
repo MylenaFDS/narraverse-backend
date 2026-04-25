@@ -145,7 +145,8 @@ async def create_turn(
             {
                 "type": "notification",
                 "message": f"{actor_name} respondeu seu turno",
-                "turn_id": turn.id
+                "turn_id": turn.id,
+                "rpg_id": rpg_id
             }
         )
 
@@ -187,7 +188,8 @@ async def create_turn(
                 {
                     "type": "notification",
                     "message": text,
-                    "turn_id": turn.id
+                    "turn_id": turn.id,
+                    "rpg_id": rpg_id
                 }
             )
 

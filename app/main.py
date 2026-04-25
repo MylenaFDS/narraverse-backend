@@ -13,11 +13,13 @@ from app.routers import character_sheets
 from app.routers import notifications
 from app.routers import search
 from app.routers import feed
+
+# ✅ WEBSOCKETS
 from app.websockets.rpg_ws import router as ws_router
+from app.websockets.notifications import router as ws_notifications_router
 
 app = FastAPI()
 
-# 🔥 CORS (ESSENCIAL)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173"],
@@ -26,6 +28,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# HTTP
 app.include_router(auth.router)
 app.include_router(users.router)
 app.include_router(posts.router)
@@ -38,7 +41,10 @@ app.include_router(character_sheets.router)
 app.include_router(notifications.router)
 app.include_router(search.router)
 app.include_router(feed.router)
+
+# 🔥 WS
 app.include_router(ws_router)
+app.include_router(ws_notifications_router)
 
 
 

@@ -3,7 +3,6 @@ from typing import Dict, List, Literal
 from fastapi import WebSocket
 
 
-# 🔥 Tipagem dos canais válidos
 RoomType = Literal[
     "turns",
     "chat",
@@ -15,14 +14,11 @@ RoomType = Literal[
 
 class ConnectionManager:
     def __init__(self):
-        # rpg_id -> room -> lista de conexões
         self.rooms: Dict[int, Dict[RoomType, List[WebSocket]]] = {}
-
-        # user_id -> conexões (notificações globais)
         self.user_connections: Dict[int, List[WebSocket]] = {}
 
     # ===============================
-    # CONNECT
+    # CONNECT (RPG ROOM)
     # ===============================
     async def connect(
         self,
@@ -33,7 +29,6 @@ class ConnectionManager:
     ):
         await websocket.accept()
 
-        # cria estrutura do RPG se não existir
         if rpg_id not in self.rooms:
             self.rooms[rpg_id] = {
                 "turns": [],
@@ -43,16 +38,25 @@ class ConnectionManager:
                 "anotacoes": []
             }
 
-        # adiciona na sala
         self.rooms[rpg_id][room].append(websocket)
 
-        # registra usuário (para notificações)
+        # 🔥 importante: registrar também no user
         self.user_connections.setdefault(user_id, []).append(websocket)
 
         print(f"✅ Conectado | RPG {rpg_id} | Sala {room} | User {user_id}")
 
     # ===============================
-    # DISCONNECT
+    # 🔔 CONNECT USER (GLOBAL)
+    # ===============================
+    async def connect_user(self, websocket: WebSocket, user_id: int):
+        await websocket.accept()
+
+        self.user_connections.setdefault(user_id, []).append(websocket)
+
+        print(f"🔔 User WS conectado: {user_id}")
+
+    # ===============================
+    # DISCONNECT (RPG ROOM)
     # ===============================
     def disconnect(
         self,
@@ -62,21 +66,14 @@ class ConnectionManager:
         room: RoomType
     ):
         try:
-            # remove da sala
             if rpg_id in self.rooms:
                 if websocket in self.rooms[rpg_id][room]:
                     self.rooms[rpg_id][room].remove(websocket)
 
-                    # limpa sala vazia
-                    if not self.rooms[rpg_id][room]:
-                        self.rooms[rpg_id][room] = []
-
-            # remove do usuário
             if user_id in self.user_connections:
                 if websocket in self.user_connections[user_id]:
                     self.user_connections[user_id].remove(websocket)
 
-                # limpa usuário sem conexões
                 if not self.user_connections[user_id]:
                     del self.user_connections[user_id]
 
@@ -84,6 +81,19 @@ class ConnectionManager:
 
         except Exception as e:
             print("Erro ao desconectar:", e)
+
+    # ===============================
+    # 🔔 DISCONNECT USER (GLOBAL)
+    # ===============================
+    def disconnect_user(self, websocket: WebSocket, user_id: int):
+        if user_id in self.user_connections:
+            if websocket in self.user_connections[user_id]:
+                self.user_connections[user_id].remove(websocket)
+
+            if not self.user_connections[user_id]:
+                del self.user_connections[user_id]
+
+        print(f"🔕 User WS desconectado: {user_id}")
 
     # ===============================
     # BROADCAST (POR SALA)
@@ -104,7 +114,6 @@ class ConnectionManager:
             except Exception:
                 dead_connections.append(connection)
 
-        # remove conexões mortas
         for conn in dead_connections:
             connections.remove(conn)
 
@@ -122,12 +131,11 @@ class ConnectionManager:
             except Exception:
                 dead_connections.append(connection)
 
-        # limpa conexões mortas
         for conn in dead_connections:
             connections.remove(conn)
 
     # ===============================
-    # DEBUG (opcional)
+    # DEBUG
     # ===============================
     def debug(self):
         print("=== ROOMS ===")

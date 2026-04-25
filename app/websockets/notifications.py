@@ -7,12 +7,14 @@ router = APIRouter()
 
 @router.websocket("/ws/notifications")
 async def notifications_ws(websocket: WebSocket):
-    user = await get_current_user_ws(websocket)
+    token = websocket.query_params.get("token")
+
+    user = await get_current_user_ws(websocket, token)
 
     await manager.connect_user(websocket, user.id)
 
     try:
         while True:
-            await websocket.receive_text() # mantém conexão viva
+            await websocket.receive_text()
     except WebSocketDisconnect:
         manager.disconnect_user(websocket, user.id)

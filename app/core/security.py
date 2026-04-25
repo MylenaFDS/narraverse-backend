@@ -91,49 +91,27 @@ def get_current_user(
 # ===============================
 # 🚀 Get Current User (WebSocket)
 # ===============================
-async def get_current_user_ws(websocket: WebSocket) -> User:
-    token = websocket.query_params.get("token")
+async def get_current_user_ws(websocket: WebSocket, token: str | None = None):
+    if not token:
+        token = websocket.query_params.get("token")
 
     if not token:
         await websocket.close(code=1008)
-        raise HTTPException(
-            status_code=401,
-            detail="Token não fornecido"
-        )
+        raise HTTPException(status_code=401, detail="Token ausente")
 
     try:
-        payload = jwt.decode(
-            token,
-            settings.SECRET_KEY,
-            algorithms=[settings.ALGORITHM]
-        )
-
-        user_id: int = payload.get("sub")
-
-        if user_id is None:
-            raise HTTPException(
-                status_code=401,
-                detail="Token inválido"
-            )
-
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
+        user_id = int(payload.get("sub"))
     except JWTError:
         await websocket.close(code=1008)
-        raise HTTPException(
-            status_code=401,
-            detail="Token inválido"
-        )
+        raise HTTPException(status_code=401, detail="Token inválido")
 
     db = SessionLocal()
 
-    user = db.query(User).filter(User.id == int(user_id)).first()
+    user = db.query(User).filter(User.id == user_id).first()
 
-    db.close()
-
-    if user is None:
+    if not user:
         await websocket.close(code=1008)
-        raise HTTPException(
-            status_code=404,
-            detail="Usuário não encontrado"
-        )
+        raise HTTPException(status_code=404, detail="Usuário não encontrado")
 
     return user

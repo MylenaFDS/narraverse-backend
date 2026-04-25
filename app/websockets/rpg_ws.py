@@ -17,45 +17,21 @@ VALID_ROOMS = {
 @router.websocket("/ws/rpg/{rpg_id}/{room}")
 async def websocket_endpoint(websocket: WebSocket, rpg_id: int, room: str):
 
-    # 🔒 valida sala
     if room not in VALID_ROOMS:
         await websocket.close(code=1008)
-        print(f"🚫 Sala inválida: {room}")
         return
 
-    # 🔐 autenticação
-    user = await get_current_user_ws(websocket)
+    token = websocket.query_params.get("token")
 
-    # conexão
-    await manager.connect(
-        websocket,
-        rpg_id,
-        user.id,
-        room # type: ignore (safe por validação acima)
-    )
+    user = await get_current_user_ws(websocket, token)
+
+    await manager.connect(websocket, rpg_id, user.id, room)  # type: ignore
 
     try:
         while True:
-            # mantém conexão viva
             await websocket.receive_text()
-
     except WebSocketDisconnect:
-        manager.disconnect(
-            websocket,
-            rpg_id,
-            user.id,
-            room # type: ignore
-        )
-
-    except Exception as e:
-        print("🔥 Erro no WS:", e)
-        manager.disconnect(
-            websocket,
-            rpg_id,
-            user.id,
-            room # type: ignore
-        )
-
+        manager.disconnect(websocket, rpg_id, user.id, room)  # type: ignore
 
 print("🔥 WebSocket carregado com multi-salas")
 
