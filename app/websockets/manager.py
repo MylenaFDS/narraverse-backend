@@ -27,7 +27,7 @@ class ConnectionManager:
         user_id: int,
         room: RoomType
     ):
-        await websocket.accept()
+        # ❌ REMOVIDO websocket.accept()
 
         if rpg_id not in self.rooms:
             self.rooms[rpg_id] = {
@@ -40,7 +40,7 @@ class ConnectionManager:
 
         self.rooms[rpg_id][room].append(websocket)
 
-        # 🔥 importante: registrar também no user
+        # registrar também no usuário
         self.user_connections.setdefault(user_id, []).append(websocket)
 
         print(f"✅ Conectado | RPG {rpg_id} | Sala {room} | User {user_id}")
@@ -49,10 +49,7 @@ class ConnectionManager:
     # 🔔 CONNECT USER (GLOBAL)
     # ===============================
     async def connect_user(self, websocket: WebSocket, user_id: int):
-        await websocket.accept()
-
         self.user_connections.setdefault(user_id, []).append(websocket)
-
         print(f"🔔 User WS conectado: {user_id}")
 
     # ===============================
@@ -110,12 +107,13 @@ class ConnectionManager:
 
         for connection in connections:
             try:
-                await connection.send_text(json.dumps(message))
+                await connection.send_json(message)  # 🔥 melhor que send_text
             except Exception:
                 dead_connections.append(connection)
 
         for conn in dead_connections:
-            connections.remove(conn)
+            if conn in connections:
+                connections.remove(conn)
 
     # ===============================
     # 🔔 NOTIFICAÇÃO INDIVIDUAL
@@ -127,12 +125,13 @@ class ConnectionManager:
 
         for connection in connections:
             try:
-                await connection.send_text(json.dumps(message))
+                await connection.send_json(message)
             except Exception:
                 dead_connections.append(connection)
 
         for conn in dead_connections:
-            connections.remove(conn)
+            if conn in connections:
+                connections.remove(conn)
 
     # ===============================
     # DEBUG

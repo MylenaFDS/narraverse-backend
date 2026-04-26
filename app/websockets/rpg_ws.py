@@ -1,9 +1,8 @@
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
-from app.websockets.manager import manager, RoomType
+from app.websockets.manager import manager
 from app.core.security import get_current_user_ws
 
 router = APIRouter()
-
 
 VALID_ROOMS = {
     "turns",
@@ -21,17 +20,27 @@ async def websocket_endpoint(websocket: WebSocket, rpg_id: int, room: str):
         await websocket.close(code=1008)
         return
 
-    token = websocket.query_params.get("token")
+    await websocket.accept()  # ✅ ÚNICO ACCEPT
 
-    user = await get_current_user_ws(websocket, token)
-
-    await manager.connect(websocket, rpg_id, user.id, room)  # type: ignore
+    user = None
 
     try:
+        token = websocket.query_params.get("token")
+        user = await get_current_user_ws(websocket, token)
+
+        await manager.connect(websocket, rpg_id, user.id, room)
+
+        print(f"✅ WS RPG conectado | user {user.id} | sala {room}")
+
         while True:
             await websocket.receive_text()
+
     except WebSocketDisconnect:
-        manager.disconnect(websocket, rpg_id, user.id, room)  # type: ignore
+        print("❌ WS RPG desconectado")
 
-print("🔥 WebSocket carregado com multi-salas")
+    except Exception as e:
+        print("🔥 ERRO WS RPG:", e)
 
+    finally:
+        if user:
+            manager.disconnect(websocket, rpg_id, user.id, room)

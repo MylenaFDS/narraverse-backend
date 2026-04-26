@@ -152,16 +152,14 @@ async def create_turn(
 
         notified_users.add(parent_turn.user_id)
 
-    # 🔔 MENÇÕES (PERSONAGENS AGRUPADAS POR USUÁRIO)
+    # 🔔 MENÇÕES
     if turn.mentioned_characters:
-
         characters = (
             db.query(Character)
             .filter(Character.id.in_(turn.mentioned_characters))
             .all()
         )
 
-        # agrupar por usuário
         user_mentions = {}
 
         for char in characters:
@@ -171,11 +169,9 @@ async def create_turn(
             user_mentions.setdefault(char.user_id, []).append(char.name)
 
         for user_id, names in user_mentions.items():
-
             if user_id in notified_users:
                 continue
 
-            # montar frase bonita
             if len(names) == 1:
                 text = f"{actor_name} mencionou {names[0]}"
             else:
@@ -194,21 +190,20 @@ async def create_turn(
             )
 
             notified_users.add(user_id)
-        # ===============================
-        # RESPONSE
-        # ===============================
-        return RPGTurnResponse(
-            id=turn.id,
-            content=turn.content,
-            user_id=turn.user_id,
-            created_at=turn.created_at,
-            reply_to_turn_id=turn.reply_to_turn_id,
-            mentioned_participants=[p.id for p in turn.mentioned_participants],
-            mentioned_characters=turn.mentioned_characters or [],
-            character_id=turn.character_id
-        )
 
-
+# ===============================
+# ✅ RESPONSE (FORA DO IF)
+# ===============================
+    return RPGTurnResponse(
+        id=turn.id,
+        content=turn.content,
+        user_id=turn.user_id,
+        created_at=turn.created_at,
+        reply_to_turn_id=turn.reply_to_turn_id,
+        mentioned_participants=[p.id for p in turn.mentioned_participants],
+        mentioned_characters=turn.mentioned_characters or [],
+        character_id=turn.character_id
+    )
 # ===============================
 # LISTAR TURNOS
 # ===============================
