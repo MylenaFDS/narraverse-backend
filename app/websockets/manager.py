@@ -1,4 +1,3 @@
-import json
 from typing import Dict, List, Literal
 from fastapi import WebSocket
 
@@ -20,15 +19,7 @@ class ConnectionManager:
     # ===============================
     # CONNECT (RPG ROOM)
     # ===============================
-    async def connect(
-        self,
-        websocket: WebSocket,
-        rpg_id: int,
-        user_id: int,
-        room: RoomType
-    ):
-        # ❌ REMOVIDO websocket.accept()
-
+    async def connect(self, websocket: WebSocket, rpg_id: int, user_id: int, room: RoomType):
         if rpg_id not in self.rooms:
             self.rooms[rpg_id] = {
                 "turns": [],
@@ -39,8 +30,6 @@ class ConnectionManager:
             }
 
         self.rooms[rpg_id][room].append(websocket)
-
-        # registrar também no usuário
         self.user_connections.setdefault(user_id, []).append(websocket)
 
         print(f"✅ Conectado | RPG {rpg_id} | Sala {room} | User {user_id}")
@@ -53,23 +42,15 @@ class ConnectionManager:
         print(f"🔔 User WS conectado: {user_id}")
 
     # ===============================
-    # DISCONNECT (RPG ROOM)
+    # DISCONNECT
     # ===============================
-    def disconnect(
-        self,
-        websocket: WebSocket,
-        rpg_id: int,
-        user_id: int,
-        room: RoomType
-    ):
+    def disconnect(self, websocket: WebSocket, rpg_id: int, user_id: int, room: RoomType):
         try:
-            if rpg_id in self.rooms:
-                if websocket in self.rooms[rpg_id][room]:
-                    self.rooms[rpg_id][room].remove(websocket)
+            if rpg_id in self.rooms and websocket in self.rooms[rpg_id][room]:
+                self.rooms[rpg_id][room].remove(websocket)
 
-            if user_id in self.user_connections:
-                if websocket in self.user_connections[user_id]:
-                    self.user_connections[user_id].remove(websocket)
+            if user_id in self.user_connections and websocket in self.user_connections[user_id]:
+                self.user_connections[user_id].remove(websocket)
 
                 if not self.user_connections[user_id]:
                     del self.user_connections[user_id]
@@ -93,25 +74,33 @@ class ConnectionManager:
         print(f"🔕 User WS desconectado: {user_id}")
 
     # ===============================
-    # BROADCAST (POR SALA)
+    # 📡 BROADCAST (COM EXCLUDE)
     # ===============================
     async def broadcast(
         self,
         rpg_id: int,
         room: RoomType,
-        message: dict
+        message: dict,
+        exclude_user: int | None = None
     ):
         connections = self.rooms.get(rpg_id, {}).get(room, [])
 
-        dead_connections = []
+        dead = []
 
-        for connection in connections:
+        for conn in connections:
             try:
-                await connection.send_json(message)  # 🔥 melhor que send_text
-            except Exception:
-                dead_connections.append(connection)
+                # se quiser excluir o próprio usuário
+                if exclude_user:
+                    user_conns = self.user_connections.get(exclude_user, [])
+                    if conn in user_conns:
+                        continue
 
-        for conn in dead_connections:
+                await conn.send_json(message)
+
+            except Exception:
+                dead.append(conn)
+
+        for conn in dead:
             if conn in connections:
                 connections.remove(conn)
 
@@ -121,30 +110,17 @@ class ConnectionManager:
     async def send_to_user(self, user_id: int, message: dict):
         connections = self.user_connections.get(user_id, [])
 
-        dead_connections = []
+        dead = []
 
-        for connection in connections:
+        for conn in connections:
             try:
-                await connection.send_json(message)
+                await conn.send_json(message)
             except Exception:
-                dead_connections.append(connection)
+                dead.append(conn)
 
-        for conn in dead_connections:
+        for conn in dead:
             if conn in connections:
                 connections.remove(conn)
-
-    # ===============================
-    # DEBUG
-    # ===============================
-    def debug(self):
-        print("=== ROOMS ===")
-        for rpg_id, rooms in self.rooms.items():
-            for room, conns in rooms.items():
-                print(f"RPG {rpg_id} | {room}: {len(conns)} conexões")
-
-        print("=== USERS ===")
-        for user_id, conns in self.user_connections.items():
-            print(f"User {user_id}: {len(conns)} conexões")
 
 
 # instância global

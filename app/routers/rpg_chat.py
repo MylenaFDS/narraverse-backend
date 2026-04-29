@@ -7,18 +7,18 @@ from app.models.rpg_participant import RPGParticipant
 from app.models.user import User
 from app.schemas.rpg_chat import RPGChatMessageCreate, RPGChatMessageResponse
 from app.core.security import get_current_user
+from app.websockets.manager import manager
 
 router = APIRouter(prefix="/rpg-chat", tags=["RPG Chat"])
 
 
 @router.post("/{rpg_id}", response_model=RPGChatMessageResponse)
-def send_message(
+async def send_message(
     rpg_id: int,
     message_data: RPGChatMessageCreate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-
     participant = (
         db.query(RPGParticipant)
         .filter(
@@ -45,8 +45,23 @@ def send_message(
     db.commit()
     db.refresh(message)
 
-    return message
+    # 🔥 ENVIA EM TEMPO REAL
+    await manager.broadcast(
+        rpg_id,
+        "chat",
+        {
+            "type": "message",
+            "data": {
+                "id": message.id,
+                "content": message.content,
+                "user_id": message.user_id,
+                "username": current_user.username,
+                "created_at": message.created_at.isoformat()
+            }
+        }
+    )
 
+    return message
 
 @router.get("/{rpg_id}", response_model=list[RPGChatMessageResponse])
 def list_messages(

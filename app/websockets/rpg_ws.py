@@ -20,7 +20,7 @@ async def websocket_endpoint(websocket: WebSocket, rpg_id: int, room: str):
         await websocket.close(code=1008)
         return
 
-    await websocket.accept()  # ✅ ÚNICO ACCEPT
+    await websocket.accept()
 
     user = None
 
@@ -32,8 +32,59 @@ async def websocket_endpoint(websocket: WebSocket, rpg_id: int, room: str):
 
         print(f"✅ WS RPG conectado | user {user.id} | sala {room}")
 
+        # 🟢 ONLINE
+        await manager.broadcast(
+            rpg_id,
+            room,
+            {
+                "type": "user_online",
+                "user_id": user.id,
+                "username": user.username,
+            },
+        )
+
         while True:
-            await websocket.receive_text()
+            data = await websocket.receive_json()
+            msg_type = data.get("type")
+
+            # ✍️ DIGITANDO
+            if msg_type == "typing_start":
+                await manager.broadcast(
+                    rpg_id,
+                    room,
+                    {
+                        "type": "typing_start",
+                        "username": user.username,
+                    },
+                    exclude_user=user.id,
+                )
+
+            elif msg_type == "typing_stop":
+                await manager.broadcast(
+                    rpg_id,
+                    room,
+                    {
+                        "type": "typing_stop",
+                        "username": user.username,
+                    },
+                    exclude_user=user.id,
+                )
+
+            # 👀 LIDO
+            elif msg_type == "read_messages":
+                message_ids = data.get("message_ids", [])
+
+                if isinstance(message_ids, list):
+                    await manager.broadcast(
+                        rpg_id,
+                        room,
+                        {
+                            "type": "message_read",
+                            "message_ids": message_ids,
+                            "user_id": user.id,
+                        },
+                        exclude_user=user.id,
+                    )
 
     except WebSocketDisconnect:
         print("❌ WS RPG desconectado")
@@ -43,4 +94,14 @@ async def websocket_endpoint(websocket: WebSocket, rpg_id: int, room: str):
 
     finally:
         if user:
+            await manager.broadcast(
+                rpg_id,
+                room,
+                {
+                    "type": "user_offline",
+                    "user_id": user.id,
+                    "username": user.username,
+                },
+            )
+
             manager.disconnect(websocket, rpg_id, user.id, room)
