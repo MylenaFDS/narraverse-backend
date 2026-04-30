@@ -77,3 +77,47 @@ def list_messages(
     )
 
     return messages
+
+    # exemplo FastAPI
+@router.delete("/{message_id}")
+async def delete_message(
+    message_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    msg = db.query(RPGMessage).filter(RPGMessage.id == message_id).first()
+
+    if not msg:
+        raise HTTPException(status_code=404, detail="Mensagem não encontrada")
+
+    if msg.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Sem permissão")
+
+    rpg_id = msg.rpg_id
+
+    db.delete(msg)
+    db.commit()
+
+    # 🔥 broadcast pra remover em tempo real
+    await manager.broadcast(
+        rpg_id,
+        "chat",
+        {
+            "type": "delete",
+            "message_id": message_id
+        }
+    )
+
+    return {"ok": True}
+    msg = db.query(Message).filter(Message.id == message_id).first()
+
+    if not msg:
+        raise HTTPException(404)
+
+    if msg.user_id != user.id:
+        raise HTTPException(403)
+
+        db.delete(msg)
+        db.commit()
+
+    return {"ok": True}
