@@ -20,13 +20,24 @@ async def websocket_endpoint(websocket: WebSocket, rpg_id: int, room: str):
         await websocket.close(code=1008)
         return
 
-    await websocket.accept()
-
     user = None
 
     try:
+        # 🔐 autenticação ANTES do accept
         token = websocket.query_params.get("token")
+
+        if not token:
+            await websocket.close(code=1008)
+            return
+
         user = await get_current_user_ws(websocket, token)
+
+        if not user:
+            await websocket.close(code=1008)
+            return
+
+        # ✅ agora aceita
+        await websocket.accept()
 
         await manager.connect(websocket, rpg_id, user.id, room)
 
@@ -41,67 +52,74 @@ async def websocket_endpoint(websocket: WebSocket, rpg_id: int, room: str):
                 "user_id": user.id,
                 "username": user.username,
             },
+            exclude_user=user.id,
         )
 
         while True:
-            data = await websocket.receive_json()
-            msg_type = data.get("type")
+            try:
+                data = await websocket.receive_json()
+                msg_type = data.get("type")
 
-            # ✍️ DIGITANDO
-            if msg_type == "typing_start":
-                await manager.broadcast(
-                    rpg_id,
-                    room,
-                    {
-                        "type": "typing_start",
-                        "username": user.username,
-                    },
-                    exclude_user=user.id,
-                )
-
-            elif msg_type == "typing_stop":
-                await manager.broadcast(
-                    rpg_id,
-                    room,
-                    {
-                        "type": "typing_stop",
-                        "username": user.username,
-                    },
-                    exclude_user=user.id,
-                )
-
-            # 👀 LIDO
-            elif msg_type == "read_messages":
-                message_ids = data.get("message_ids", [])
-
-                if isinstance(message_ids, list):
+                if msg_type == "typing_start":
                     await manager.broadcast(
                         rpg_id,
                         room,
                         {
-                            "type": "message_read",
-                            "message_ids": message_ids,
-                            "user_id": user.id,
+                            "type": "typing_start",
+                            "username": user.username,
                         },
                         exclude_user=user.id,
                     )
 
+                elif msg_type == "typing_stop":
+                    await manager.broadcast(
+                        rpg_id,
+                        room,
+                        {
+                            "type": "typing_stop",
+                            "username": user.username,
+                        },
+                        exclude_user=user.id,
+                    )
+
+                elif msg_type == "read_messages":
+                    message_ids = data.get("message_ids", [])
+
+                    if isinstance(message_ids, list):
+                        await manager.broadcast(
+                            rpg_id,
+                            room,
+                            {
+                                "type": "message_read",
+                                "message_ids": message_ids,
+                                "user_id": user.id,
+                            },
+                            exclude_user=user.id,
+                        )
+
+            except Exception as inner_error:
+                print("⚠️ erro WS mensagem:", inner_error)
+
     except WebSocketDisconnect:
-        print("❌ WS RPG desconectado")
+        print(f"❌ WS RPG desconectado | user {user.id if user else 'unknown'}")
 
     except Exception as e:
         print("🔥 ERRO WS RPG:", e)
 
     finally:
         if user:
-            await manager.broadcast(
-                rpg_id,
-                room,
-                {
-                    "type": "user_offline",
-                    "user_id": user.id,
-                    "username": user.username,
-                },
-            )
+            try:
+                await manager.broadcast(
+                    rpg_id,
+                    room,
+                    {
+                        "type": "user_offline",
+                        "user_id": user.id,
+                        "username": user.username,
+                    },
+                    exclude_user=user.id,
+                )
+            except:
+                pass
 
             manager.disconnect(websocket, rpg_id, user.id, room)

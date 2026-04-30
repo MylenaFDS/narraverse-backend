@@ -7,15 +7,28 @@ router = APIRouter()
 
 @router.websocket("/ws/notifications")
 async def notifications_ws(websocket: WebSocket):
-    await websocket.accept()
 
     user = None
 
     try:
         token = websocket.query_params.get("token")
+
+        if not token:
+            await websocket.close(code=1008)
+            return
+
         user = await get_current_user_ws(websocket, token)
 
+        if not user:
+            await websocket.close(code=1008)
+            return
+
+        # ✅ aceita só depois de validar
+        await websocket.accept()
+
         await manager.connect_user(websocket, user.id)
+
+        print(f"🔔 WS notifications conectado | user {user.id}")
 
         while True:
             await websocket.receive_text()

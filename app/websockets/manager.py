@@ -1,7 +1,6 @@
 from typing import Dict, List, Literal
 from fastapi import WebSocket
 
-
 RoomType = Literal[
     "turns",
     "chat",
@@ -42,15 +41,17 @@ class ConnectionManager:
         print(f"🔔 User WS conectado: {user_id}")
 
     # ===============================
-    # DISCONNECT
+    # DISCONNECT (RPG)
     # ===============================
     def disconnect(self, websocket: WebSocket, rpg_id: int, user_id: int, room: RoomType):
         try:
-            if rpg_id in self.rooms and websocket in self.rooms[rpg_id][room]:
-                self.rooms[rpg_id][room].remove(websocket)
+            if rpg_id in self.rooms:
+                if websocket in self.rooms[rpg_id][room]:
+                    self.rooms[rpg_id][room].remove(websocket)
 
-            if user_id in self.user_connections and websocket in self.user_connections[user_id]:
-                self.user_connections[user_id].remove(websocket)
+            if user_id in self.user_connections:
+                if websocket in self.user_connections[user_id]:
+                    self.user_connections[user_id].remove(websocket)
 
                 if not self.user_connections[user_id]:
                     del self.user_connections[user_id]
@@ -74,7 +75,7 @@ class ConnectionManager:
         print(f"🔕 User WS desconectado: {user_id}")
 
     # ===============================
-    # 📡 BROADCAST (COM EXCLUDE)
+    # 📡 BROADCAST (com limpeza)
     # ===============================
     async def broadcast(
         self,
@@ -84,12 +85,10 @@ class ConnectionManager:
         exclude_user: int | None = None
     ):
         connections = self.rooms.get(rpg_id, {}).get(room, [])
-
         dead = []
 
         for conn in connections:
             try:
-                # se quiser excluir o próprio usuário
                 if exclude_user:
                     user_conns = self.user_connections.get(exclude_user, [])
                     if conn in user_conns:
@@ -100,6 +99,7 @@ class ConnectionManager:
             except Exception:
                 dead.append(conn)
 
+        # remove conexões mortas
         for conn in dead:
             if conn in connections:
                 connections.remove(conn)
@@ -109,7 +109,6 @@ class ConnectionManager:
     # ===============================
     async def send_to_user(self, user_id: int, message: dict):
         connections = self.user_connections.get(user_id, [])
-
         dead = []
 
         for conn in connections:
