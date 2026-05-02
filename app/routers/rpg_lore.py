@@ -51,7 +51,10 @@ def create_lore(
         )
 
         if not participant:
-            raise HTTPException(status_code=403, detail="Você não participa deste RPG")
+            raise HTTPException(
+                status_code=403,
+                detail="Você não participa deste RPG"
+            )
 
         # verificar se sugestões são permitidas
         if not rpg.allow_lore_suggestions:
@@ -76,7 +79,7 @@ def create_lore(
     return lore
 
 
-# 📖 Listar lore aprovada
+# 📖 Listar lore aprovada (público)
 @router.get("/{rpg_id}", response_model=list[RPGLoreResponse])
 def list_lore(
     rpg_id: int,
@@ -105,8 +108,14 @@ def list_suggestions(
 
     rpg = db.query(RPG).filter(RPG.id == rpg_id).first()
 
-    if not rpg or rpg.owner_id != current_user.id:
-        raise HTTPException(status_code=403, detail="Apenas o dono pode ver sugestões")
+    if not rpg:
+        raise HTTPException(status_code=404, detail="RPG não encontrado")
+
+    if rpg.owner_id != current_user.id:
+        raise HTTPException(
+            status_code=403,
+            detail="Apenas o dono pode ver sugestões"
+        )
 
     suggestions = (
         db.query(RPGLore)
@@ -136,10 +145,18 @@ def approve_lore(
 
     rpg = db.query(RPG).filter(RPG.id == lore.rpg_id).first()
 
-    if rpg.owner_id != current_user.id:
-        raise HTTPException(status_code=403, detail="Apenas o dono pode aprovar")
+    if not rpg:
+        raise HTTPException(status_code=404, detail="RPG não encontrado")
 
+    if rpg.owner_id != current_user.id:
+        raise HTTPException(
+            status_code=403,
+            detail="Apenas o dono pode aprovar"
+        )
+
+    # 🔥 atualiza status corretamente
     lore.is_approved = True
+    lore.is_suggestion = False
 
     db.commit()
 

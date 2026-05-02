@@ -18,6 +18,9 @@ class RPGLore(Base):
     is_approved = Column(Boolean, default=False)
     is_suggestion = Column(Boolean, default=False)
 
+    category = Column(String(50), default="Geral")
+    order = Column(Integer, default=0)
+    
     # RELATIONSHIPS
     rpg = relationship("RPG")
     author = relationship("User")
