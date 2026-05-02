@@ -5,11 +5,13 @@ from app.core.security import get_current_user_ws
 router = APIRouter()
 
 VALID_ROOMS = {
+    "enciclopedia",
+    "fichas",
     "turns",
     "chat",
-    "fichas",
-    "enciclopedia",
     "anotacoes"
+    
+    
 }
 
 
