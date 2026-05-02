@@ -13,6 +13,7 @@ from app.routers import character_sheets
 from app.routers import notifications
 from app.routers import search
 from app.routers import feed
+from app.routers import rpg_lore
 
 # ✅ WEBSOCKETS
 from app.websockets.rpg_ws import router as ws_router
@@ -42,7 +43,7 @@ app.include_router(character_sheets.router)
 app.include_router(notifications.router)
 app.include_router(search.router)
 app.include_router(feed.router)
-
+app.include_router(rpg_lore.router)
 # 🔥 WS
 app.include_router(ws_router)
 app.include_router(ws_notifications_router)
