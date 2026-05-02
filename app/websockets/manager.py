@@ -2,10 +2,11 @@ from typing import Dict, List, Literal
 from fastapi import WebSocket
 
 RoomType = Literal[
+    "enciclopedia",
+    "fichas",
     "turns",
     "chat",
-    "fichas",
-    "enciclopedia",
+    
     "anotacoes"
 ]
 
