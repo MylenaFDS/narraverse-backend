@@ -55,6 +55,7 @@ async def websocket_endpoint(websocket: WebSocket, rpg_id: int, room: str):
             exclude_user=user.id,
         )
 
+        # 🔥 LOOP CORRIGIDO
         while True:
             try:
                 data = await websocket.receive_json()
@@ -97,11 +98,18 @@ async def websocket_endpoint(websocket: WebSocket, rpg_id: int, room: str):
                             exclude_user=user.id,
                         )
 
+            # ✅ 🔥 CORREÇÃO PRINCIPAL
+            except WebSocketDisconnect:
+                print(f"❌ WS RPG desconectado | user {user.id}")
+                break  # 🚨 ESSENCIAL — para o loop
+
+            # ✅ evita loop infinito com erro
             except Exception as inner_error:
                 print("⚠️ erro WS mensagem:", inner_error)
+                break  # 🚨 evita spam infinito
 
     except WebSocketDisconnect:
-        print(f"❌ WS RPG desconectado | user {user.id if user else 'unknown'}")
+        print(f"❌ WS RPG desconectado (outer) | user {user.id if user else 'unknown'}")
 
     except Exception as e:
         print("🔥 ERRO WS RPG:", e)
@@ -119,7 +127,7 @@ async def websocket_endpoint(websocket: WebSocket, rpg_id: int, room: str):
                     },
                     exclude_user=user.id,
                 )
-            except:
+            except Exception:
                 pass
 
             manager.disconnect(websocket, rpg_id, user.id, room)

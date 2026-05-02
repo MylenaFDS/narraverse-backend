@@ -56,6 +56,7 @@ def login(
 
         return {
     "access_token": access_token,
+    "refresh_token": refresh_token,  # 🔥 ADICIONAR
     "token_type": "bearer",
     "user": {
         "id": user.id,

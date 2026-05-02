@@ -48,10 +48,9 @@ app.include_router(ws_router)
 app.include_router(ws_notifications_router)
 
 
-@app.get("/ping")
-def ping():
-    return {"ok": True}
-
+@app.get("/")
+def root():
+    return {"status": "API online"}
 
 
 
