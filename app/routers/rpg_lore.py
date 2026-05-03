@@ -5,10 +5,11 @@ from app.db.session import get_db
 from app.models.rpg_lore import RPGLore
 from app.models.rpg import RPG
 from app.models.rpg_participant import RPGParticipant
+from app.models.rpg_lore import RPGLoreCategory
 from app.models.user import User
 from app.schemas.rpg_lore import RPGLoreCreate, RPGLoreResponse
 from app.core.security import get_current_user
-
+from pydantic import BaseModel
 router = APIRouter(prefix="/rpg-lore", tags=["RPG Lore"])
 
 
@@ -161,6 +162,56 @@ def approve_lore(
     db.commit()
 
     return {"message": "Lore aprovada com sucesso"}
+
+class CategoryCreate(BaseModel):
+    name: str
+
+
+@router.post("/{rpg_id}/categories")
+def create_category(
+    rpg_id: int,
+    data: CategoryCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    rpg = db.query(RPG).filter(RPG.id == rpg_id).first()
+
+    if not rpg:
+        raise HTTPException(status_code=404, detail="RPG não encontrado")
+
+    # 🔒 só o dono pode criar categoria
+    if rpg.owner_id != current_user.id:
+        raise HTTPException(
+            status_code=403,
+            detail="Apenas o dono pode criar categorias"
+        )
+
+    # evitar duplicadas
+    existing = (
+        db.query(RPGLoreCategory)
+        .filter(
+            RPGLoreCategory.rpg_id == rpg_id,
+            RPGLoreCategory.name == data.name
+        )
+        .first()
+    )
+
+    if existing:
+        raise HTTPException(
+            status_code=400,
+            detail="Categoria já existe"
+        )
+
+    category = RPGLoreCategory(
+        name=data.name,
+        rpg_id=rpg_id
+    )
+
+    db.add(category)
+    db.commit()
+    db.refresh(category)
+
+    return category
 
 @router.get("/{rpg_id}/categories")
 def get_categories(rpg_id: int, db: Session = Depends(get_db)):

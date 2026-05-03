@@ -20,3 +20,4 @@ from app.models.rpg_participant import RPGParticipant
 from app.models.rpg_turn import RPGTurn
 from app.models.tag import Tag
 from app.models.rpg_tag import rpg_tags
+from app.models.rpg_lore import RPGLore, RPGLoreCategory
