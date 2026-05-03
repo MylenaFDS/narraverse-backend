@@ -13,6 +13,6 @@ class RPGResponse(BaseModel):
     name: str
     description: str | None
     owner_id: int
-
+    is_owner: bool
     class Config:
         from_attributes = True

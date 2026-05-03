@@ -211,14 +211,34 @@ def update_participant_status(
     db.commit()
 
     return {"message": f"Solicitação {status} com sucesso."}
+
 @router.get("/{rpg_id}", response_model=RPGResponse)
 def get_rpg_by_id(
     rpg_id: int,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     rpg = db.query(RPG).filter(RPG.id == rpg_id).first()
 
     if not rpg:
         raise HTTPException(status_code=404, detail="RPG não encontrado")
 
-    return rpg
+    return {
+        **rpg.__dict__,
+        "is_owner": rpg.owner_id == current_user.id
+    }
+
+@router.get("/{rpg_id}/me")
+def get_my_role_in_rpg(
+    rpg_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    rpg = db.query(RPG).filter(RPG.id == rpg_id).first()
+
+    if not rpg:
+        raise HTTPException(status_code=404, detail="RPG não encontrado")
+
+    return {
+        "is_owner": rpg.owner_id == current_user.id
+    }

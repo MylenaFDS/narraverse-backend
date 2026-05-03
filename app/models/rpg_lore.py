@@ -18,9 +18,25 @@ class RPGLore(Base):
     is_approved = Column(Boolean, default=False)
     is_suggestion = Column(Boolean, default=False)
 
+    # 🔥 CATEGORIA (continua aqui por compatibilidade)
     category = Column(String(50), default="Geral")
+
     order = Column(Integer, default=0)
-    
+
     # RELATIONSHIPS
     rpg = relationship("RPG")
     author = relationship("User")
+
+
+# ✅ NOVA TABELA
+class RPGLoreCategory(Base):
+    __tablename__ = "rpg_lore_categories"
+
+    id = Column(Integer, primary_key=True, index=True)
+
+    name = Column(String(50), nullable=False)
+
+    rpg_id = Column(Integer, ForeignKey("rpgs.id"), nullable=False)
+
+    # RELATIONSHIP
+    rpg = relationship("RPG")

@@ -161,3 +161,14 @@ def approve_lore(
     db.commit()
 
     return {"message": "Lore aprovada com sucesso"}
+
+@router.get("/{rpg_id}/categories")
+def get_categories(rpg_id: int, db: Session = Depends(get_db)):
+    categories = (
+        db.query(RPGLore.category)
+        .filter(RPGLore.rpg_id == rpg_id)
+        .distinct()
+        .all()
+    )
+
+    return [c[0] for c in categories if c[0]]
