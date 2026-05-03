@@ -213,8 +213,17 @@ def create_category(
 
     return category
 
+from app.models.rpg_lore import RPGLoreCategory
+
 @router.get("/{rpg_id}/categories")
 def get_categories(rpg_id: int, db: Session = Depends(get_db)):
+    categories = (
+        db.query(RPGLoreCategory)
+        .filter(RPGLoreCategory.rpg_id == rpg_id)
+        .all()
+    )
+
+    return [c.name for c in categories]
     categories = (
         db.query(RPGLore.category)
         .filter(RPGLore.rpg_id == rpg_id)
