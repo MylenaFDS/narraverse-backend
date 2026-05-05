@@ -33,6 +33,7 @@ def create_lore(
         lore = RPGLore(
             title=data.title,
             content=data.content,
+            category=data.category,
             rpg_id=rpg_id,
             author_id=current_user.id,
             is_approved=True,
@@ -67,6 +68,7 @@ def create_lore(
         lore = RPGLore(
             title=data.title,
             content=data.content,
+            category=data.category,
             rpg_id=rpg_id,
             author_id=current_user.id,
             is_approved=False,
@@ -232,3 +234,27 @@ def get_categories(rpg_id: int, db: Session = Depends(get_db)):
     )
 
     return [c[0] for c in categories if c[0]]
+
+@router.delete("/{lore_id}")
+def delete_lore(
+    lore_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    lore = db.query(RPGLore).filter(RPGLore.id == lore_id).first()
+
+    if not lore:
+        raise HTTPException(status_code=404, detail="Lore não encontrada")
+
+    rpg = db.query(RPG).filter(RPG.id == lore.rpg_id).first()
+
+    if rpg.owner_id != current_user.id:
+        raise HTTPException(
+            status_code=403,
+            detail="Apenas o dono pode deletar"
+        )
+
+    db.delete(lore)
+    db.commit()
+
+    return {"message": "Lore deletada"}
