@@ -12,6 +12,13 @@ class RPG(Base):
     name = Column(String(150), nullable=False, index=True)
     description = Column(Text, nullable=True)
 
+    # 🗺️ MAPA DO MUNDO
+    world_map = Column(String, nullable=True)
+    map_regions = relationship(
+    "MapRegion",
+    back_populates="rpg",
+    cascade="all, delete"
+)
     # 🔥 APENAS UM DONO
     owner_id = Column(Integer, ForeignKey("users.id"))
 
