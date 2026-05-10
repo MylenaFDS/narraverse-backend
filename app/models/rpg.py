@@ -17,7 +17,7 @@ class RPG(Base):
     map_regions = relationship(
     "MapRegion",
     back_populates="rpg",
-    cascade="all, delete"
+    cascade="all, delete-orphan"
 )
     # 🔥 APENAS UM DONO
     owner_id = Column(Integer, ForeignKey("users.id"))

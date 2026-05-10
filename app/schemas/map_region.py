@@ -3,17 +3,27 @@ from pydantic import BaseModel
 
 class MapRegionCreate(BaseModel):
     name: str
-    description: str | None = None
-    x: int
-    y: int
+
+    lore_id: int | None = None
+
+    pos_x: int
+    pos_y: int
+
+    color: str = "#7c3aed"
 
 
 class MapRegionResponse(BaseModel):
     id: int
+
     name: str
-    description: str | None = None
-    x: int
-    y: int
+
+    lore_id: int | None = None
+
+    pos_x: int
+    pos_y: int
+
+    color: str
+
     rpg_id: int
 
     class Config:

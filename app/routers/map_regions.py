@@ -39,9 +39,12 @@ def create_map_region(
 
     region = MapRegion(
         name=data.name,
-        description=data.description,
-        x=data.x,
-        y=data.y,
+        lore_id=data.lore_id,
+
+pos_x=data.pos_x,
+pos_y=data.pos_y,
+
+color=data.color,
         rpg_id=rpg_id,
     )
     db.add(region)

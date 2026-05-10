@@ -1,23 +1,36 @@
-# Model (`app/models/map_region.py`)
-
-
-from sqlalchemy import Column, Integer, String, ForeignKey, Text
+from sqlalchemy import Column, Integer, String, ForeignKey
 from sqlalchemy.orm import relationship
-
 from app.db.base import Base
 
 
 class MapRegion(Base):
-    __tablename__ = "map_regions"
+    __tablename__ = "rpg_map_regions"
 
     id = Column(Integer, primary_key=True, index=True)
 
-    name = Column(String, nullable=False)
-    description = Column(Text, nullable=True)
+    rpg_id = Column(
+        Integer,
+        ForeignKey("rpgs.id"),
+        nullable=False
+    )
 
-    x = Column(Integer, nullable=False)
-    y = Column(Integer, nullable=False)
+    lore_id = Column(
+        Integer,
+        ForeignKey("rpg_lore.id"),
+        nullable=True
+    )
 
-    rpg_id = Column(Integer, ForeignKey("rpgs.id", ondelete="CASCADE"))
+    name = Column(String(100), nullable=False)
 
-    rpg = relationship("RPG", back_populates="map_regions")
+    # posição no mapa
+    pos_x = Column(Integer, nullable=False)
+    pos_y = Column(Integer, nullable=False)
+
+    color = Column(String(20), default="#7c3aed")
+
+    # RELATIONSHIPS
+    rpg = relationship(
+    "RPG",
+    back_populates="map_regions"
+)
+    lore = relationship("RPGLore")
