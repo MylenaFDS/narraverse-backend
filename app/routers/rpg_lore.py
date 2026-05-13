@@ -1,20 +1,34 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from pydantic import BaseModel
 
 from app.db.session import get_db
-from app.models.rpg_lore import RPGLore
+from app.models.rpg_lore import RPGLore, RPGLoreCategory
 from app.models.rpg import RPG
 from app.models.rpg_participant import RPGParticipant
-from app.models.rpg_lore import RPGLoreCategory
 from app.models.user import User
-from app.schemas.rpg_lore import RPGLoreCreate, RPGLoreResponse
+from app.models.map_region import MapRegion
+
+from app.schemas.rpg_lore import (
+    RPGLoreCreate,
+    RPGLoreResponse,
+)
+
 from app.core.security import get_current_user
-from pydantic import BaseModel
-router = APIRouter(prefix="/rpg-lore", tags=["RPG Lore"])
+
+router = APIRouter(
+    prefix="/rpg-lore",
+    tags=["RPG Lore"]
+)
 
 
-# 🔥 Criar lore ou sugestão
-@router.post("/{rpg_id}", response_model=RPGLoreResponse)
+# ======================================
+# ✍️ CRIAR LORE / SUGESTÃO
+# ======================================
+@router.post(
+    "/{rpg_id}",
+    response_model=RPGLoreResponse
+)
 def create_lore(
     rpg_id: int,
     data: RPGLoreCreate,
@@ -22,12 +36,19 @@ def create_lore(
     current_user: User = Depends(get_current_user),
 ):
 
-    rpg = db.query(RPG).filter(RPG.id == rpg_id).first()
+    rpg = (
+        db.query(RPG)
+        .filter(RPG.id == rpg_id)
+        .first()
+    )
 
     if not rpg:
-        raise HTTPException(status_code=404, detail="RPG não encontrado")
+        raise HTTPException(
+            status_code=404,
+            detail="RPG não encontrado"
+        )
 
-    # 🔥 Se for dono → cria direto aprovado
+    # 🔥 dono cria direto
     if rpg.owner_id == current_user.id:
 
         lore = RPGLore(
@@ -82,8 +103,13 @@ def create_lore(
     return lore
 
 
-# 📖 Listar lore aprovada (público)
-@router.get("/{rpg_id}", response_model=list[RPGLoreResponse])
+# ======================================
+# 📖 LISTAR LORE APROVADA
+# ======================================
+@router.get(
+    "/{rpg_id}",
+    response_model=list[RPGLoreResponse]
+)
 def list_lore(
     rpg_id: int,
     db: Session = Depends(get_db)
@@ -101,18 +127,30 @@ def list_lore(
     return lore
 
 
-# 📨 Listar sugestões (apenas dono)
-@router.get("/{rpg_id}/suggestions", response_model=list[RPGLoreResponse])
+# ======================================
+# 📨 LISTAR SUGESTÕES
+# ======================================
+@router.get(
+    "/{rpg_id}/suggestions",
+    response_model=list[RPGLoreResponse]
+)
 def list_suggestions(
     rpg_id: int,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
 
-    rpg = db.query(RPG).filter(RPG.id == rpg_id).first()
+    rpg = (
+        db.query(RPG)
+        .filter(RPG.id == rpg_id)
+        .first()
+    )
 
     if not rpg:
-        raise HTTPException(status_code=404, detail="RPG não encontrado")
+        raise HTTPException(
+            status_code=404,
+            detail="RPG não encontrado"
+        )
 
     if rpg.owner_id != current_user.id:
         raise HTTPException(
@@ -133,7 +171,9 @@ def list_suggestions(
     return suggestions
 
 
-# ✅ Aprovar sugestão
+# ======================================
+# ✅ APROVAR SUGESTÃO
+# ======================================
 @router.put("/{lore_id}/approve")
 def approve_lore(
     lore_id: int,
@@ -141,15 +181,29 @@ def approve_lore(
     current_user: User = Depends(get_current_user),
 ):
 
-    lore = db.query(RPGLore).filter(RPGLore.id == lore_id).first()
+    lore = (
+        db.query(RPGLore)
+        .filter(RPGLore.id == lore_id)
+        .first()
+    )
 
     if not lore:
-        raise HTTPException(status_code=404, detail="Lore não encontrada")
+        raise HTTPException(
+            status_code=404,
+            detail="Lore não encontrada"
+        )
 
-    rpg = db.query(RPG).filter(RPG.id == lore.rpg_id).first()
+    rpg = (
+        db.query(RPG)
+        .filter(RPG.id == lore.rpg_id)
+        .first()
+    )
 
     if not rpg:
-        raise HTTPException(status_code=404, detail="RPG não encontrado")
+        raise HTTPException(
+            status_code=404,
+            detail="RPG não encontrado"
+        )
 
     if rpg.owner_id != current_user.id:
         raise HTTPException(
@@ -157,18 +211,26 @@ def approve_lore(
             detail="Apenas o dono pode aprovar"
         )
 
-    # 🔥 atualiza status corretamente
     lore.is_approved = True
     lore.is_suggestion = False
 
     db.commit()
 
-    return {"message": "Lore aprovada com sucesso"}
+    return {
+        "message": "Lore aprovada com sucesso"
+    }
 
+
+# ======================================
+# 📂 CATEGORY SCHEMA
+# ======================================
 class CategoryCreate(BaseModel):
     name: str
 
 
+# ======================================
+# ➕ CRIAR CATEGORIA
+# ======================================
 @router.post("/{rpg_id}/categories")
 def create_category(
     rpg_id: int,
@@ -176,19 +238,25 @@ def create_category(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    rpg = db.query(RPG).filter(RPG.id == rpg_id).first()
+
+    rpg = (
+        db.query(RPG)
+        .filter(RPG.id == rpg_id)
+        .first()
+    )
 
     if not rpg:
-        raise HTTPException(status_code=404, detail="RPG não encontrado")
+        raise HTTPException(
+            status_code=404,
+            detail="RPG não encontrado"
+        )
 
-    # 🔒 só o dono pode criar categoria
     if rpg.owner_id != current_user.id:
         raise HTTPException(
             status_code=403,
             detail="Apenas o dono pode criar categorias"
         )
 
-    # evitar duplicadas
     existing = (
         db.query(RPGLoreCategory)
         .filter(
@@ -215,38 +283,60 @@ def create_category(
 
     return category
 
-from app.models.rpg_lore import RPGLoreCategory
 
+# ======================================
+# 📂 LISTAR CATEGORIAS
+# ======================================
 @router.get("/{rpg_id}/categories")
-def get_categories(rpg_id: int, db: Session = Depends(get_db)):
+def get_categories(
+    rpg_id: int,
+    db: Session = Depends(get_db)
+):
+
     categories = (
         db.query(RPGLoreCategory)
-        .filter(RPGLoreCategory.rpg_id == rpg_id)
+        .filter(
+            RPGLoreCategory.rpg_id == rpg_id
+        )
         .all()
     )
 
     return [c.name for c in categories]
-    categories = (
-        db.query(RPGLore.category)
-        .filter(RPGLore.rpg_id == rpg_id)
-        .distinct()
-        .all()
-    )
 
-    return [c[0] for c in categories if c[0]]
 
+# ======================================
+# 🗑️ DELETAR LORE
+# ======================================
 @router.delete("/{lore_id}")
 def delete_lore(
     lore_id: int,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    lore = db.query(RPGLore).filter(RPGLore.id == lore_id).first()
+
+    lore = (
+        db.query(RPGLore)
+        .filter(RPGLore.id == lore_id)
+        .first()
+    )
 
     if not lore:
-        raise HTTPException(status_code=404, detail="Lore não encontrada")
+        raise HTTPException(
+            status_code=404,
+            detail="Lore não encontrada"
+        )
 
-    rpg = db.query(RPG).filter(RPG.id == lore.rpg_id).first()
+    rpg = (
+        db.query(RPG)
+        .filter(RPG.id == lore.rpg_id)
+        .first()
+    )
+
+    if not rpg:
+        raise HTTPException(
+            status_code=404,
+            detail="RPG não encontrado"
+        )
 
     if rpg.owner_id != current_user.id:
         raise HTTPException(
@@ -254,7 +344,16 @@ def delete_lore(
             detail="Apenas o dono pode deletar"
         )
 
+    # 🔥 remove regiões ligadas à lore
+    db.query(MapRegion).filter(
+        MapRegion.lore_id == lore.id
+    ).delete()
+
+    # 🔥 remove lore
     db.delete(lore)
+
     db.commit()
 
-    return {"message": "Lore deletada"}
+    return {
+        "message": "Lore deletada"
+    }
