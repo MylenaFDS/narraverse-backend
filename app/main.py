@@ -15,6 +15,7 @@ from app.routers import search
 from app.routers import feed
 from app.routers import rpg_lore
 from app.routers import map_regions
+from fastapi.staticfiles import StaticFiles
 
 # ✅ WEBSOCKETS
 from app.websockets.rpg_ws import router as ws_router
@@ -29,6 +30,12 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+)
+
+app.mount(
+    "/uploads",
+    StaticFiles(directory="uploads"),
+    name="uploads"
 )
 
 # HTTP

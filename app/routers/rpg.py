@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
@@ -8,6 +8,8 @@ from app.models.tag import Tag
 from app.schemas.rpg import RPGCreate, RPGResponse
 from app.models.user import User
 from app.core.security import get_current_user
+import shutil
+import os
 
 
 router = APIRouter(prefix="/rpgs", tags=["RPGs"])
@@ -241,4 +243,50 @@ def get_my_role_in_rpg(
 
     return {
         "is_owner": rpg.owner_id == current_user.id
+    }
+
+@router.post("/{rpg_id}/map-image")
+def upload_map_image(
+    rpg_id: int,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    rpg = (
+        db.query(RPG)
+        .filter(RPG.id == rpg_id)
+        .first()
+    )
+
+    if not rpg:
+        raise HTTPException(
+            status_code=404,
+            detail="RPG não encontrado"
+        )
+
+    if rpg.owner_id != current_user.id:
+        raise HTTPException(
+            status_code=403,
+            detail="Apenas o dono pode alterar o mapa"
+        )
+
+    os.makedirs("uploads/maps", exist_ok=True)
+
+    filename = f"rpg_{rpg_id}.png"
+
+    filepath = f"uploads/maps/{filename}"
+
+    with open(filepath, "wb") as buffer:
+        shutil.copyfileobj(
+            file.file,
+            buffer
+        )
+
+    rpg.world_map = filepath
+
+    db.commit()
+
+    return {
+        "message": "Mapa enviado",
+        "world_map": filepath,
     }
