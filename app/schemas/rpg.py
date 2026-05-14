@@ -12,7 +12,12 @@ class RPGResponse(BaseModel):
     id: int
     name: str
     description: str | None
+
     owner_id: int
     is_owner: bool
+
+    # 🔥 ADICIONAR
+    world_map: str | None = None
+
     class Config:
         from_attributes = True
