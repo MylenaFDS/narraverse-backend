@@ -12,6 +12,7 @@ from app.models.map_region import MapRegion
 from app.schemas.rpg_lore import (
     RPGLoreCreate,
     RPGLoreResponse,
+    RPGLoreUpdate
 )
 
 from app.core.security import get_current_user
@@ -303,6 +304,56 @@ def get_categories(
 
     return [c.name for c in categories]
 
+# ======================================
+# ✏️ EDITAR LORE
+# ======================================
+@router.put("/{lore_id}")
+def update_lore(
+    lore_id: int,
+    data: RPGLoreUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+
+    lore = (
+        db.query(RPGLore)
+        .filter(RPGLore.id == lore_id)
+        .first()
+    )
+
+    if not lore:
+        raise HTTPException(
+            status_code=404,
+            detail="Lore não encontrada"
+        )
+
+    rpg = (
+        db.query(RPG)
+        .filter(RPG.id == lore.rpg_id)
+        .first()
+    )
+
+    if not rpg:
+        raise HTTPException(
+            status_code=404,
+            detail="RPG não encontrado"
+        )
+
+    # só dono pode editar
+    if rpg.owner_id != current_user.id:
+        raise HTTPException(
+            status_code=403,
+            detail="Apenas o dono pode editar"
+        )
+
+    lore.title = data.title
+    lore.content = data.content
+    lore.category = data.category
+
+    db.commit()
+    db.refresh(lore)
+
+    return lore
 
 # ======================================
 # 🗑️ DELETAR LORE
