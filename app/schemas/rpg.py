@@ -7,6 +7,8 @@ class RPGCreate(BaseModel):
     description: Optional[str] = None
     tags: Optional[List[str]] = []
 
+class RPGInvite(BaseModel):
+    user_id: int
 
 class RPGResponse(BaseModel):
     id: int

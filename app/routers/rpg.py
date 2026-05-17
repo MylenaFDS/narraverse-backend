@@ -5,7 +5,7 @@ from app.db.session import get_db
 from app.models.rpg import RPG
 from app.models.rpg_participant import RPGParticipant
 from app.models.tag import Tag
-from app.schemas.rpg import RPGCreate, RPGResponse
+from app.schemas.rpg import RPGCreate, RPGResponse, RPGInvite
 from app.models.user import User
 from app.core.security import get_current_user
 import shutil
@@ -213,6 +213,112 @@ def update_participant_status(
     db.commit()
 
     return {"message": f"Solicitação {status} com sucesso."}
+
+# ======================================
+# 📨 CONVIDAR PARTICIPANTE
+# ======================================
+@router.post("/{rpg_id}/invite")
+def invite_participant(
+    rpg_id: int,
+    data: RPGInvite,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+
+    # verificar RPG
+    rpg = (
+        db.query(RPG)
+        .filter(RPG.id == rpg_id)
+        .first()
+    )
+
+    if not rpg:
+        raise HTTPException(
+            status_code=404,
+            detail="RPG não encontrado"
+        )
+
+    # apenas dono
+    if rpg.owner_id != current_user.id:
+        raise HTTPException(
+            status_code=403,
+            detail="Apenas o dono pode convidar"
+        )
+
+    # usuário existe?
+    user = (
+        db.query(User)
+        .filter(User.id == data.user_id)
+        .first()
+    )
+
+    if not user:
+        raise HTTPException(
+            status_code=404,
+            detail="Usuário não encontrado"
+        )
+
+    # impedir duplicado
+    existing = (
+        db.query(RPGParticipant)
+        .filter(
+            RPGParticipant.rpg_id == rpg_id,
+            RPGParticipant.user_id == data.user_id,
+        )
+        .first()
+    )
+
+    if existing:
+        raise HTTPException(
+            status_code=400,
+            detail="Usuário já possui convite ou participação"
+        )
+
+    invite = RPGParticipant(
+        user_id=data.user_id,
+        rpg_id=rpg_id,
+        status="invited",
+        invited_by=current_user.id,
+    )
+
+    db.add(invite)
+    db.commit()
+
+    return {
+        "message": "Convite enviado com sucesso"
+    }
+
+# ======================================
+# 📨 MEUS CONVITES
+# ======================================
+@router.get("/invites")
+def get_my_invites(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+
+    invites = (
+        db.query(RPGParticipant, RPG)
+        .join(
+            RPG,
+            RPG.id == RPGParticipant.rpg_id
+        )
+        .filter(
+            RPGParticipant.user_id == current_user.id,
+            RPGParticipant.status == "invited"
+        )
+        .all()
+    )
+
+    return [
+        {
+            "rpg_id": rpg.id,
+            "rpg_name": rpg.name,
+            "description": rpg.description,
+            "status": participant.status,
+        }
+        for participant, rpg in invites
+    ]
 
 @router.get("/{rpg_id}", response_model=RPGResponse)
 def get_rpg_by_id(
