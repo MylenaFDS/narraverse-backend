@@ -90,6 +90,106 @@ def get_my_rpgs(
         for rpg in rpgs
     ]
 
+# ======================================
+# 📨 MEUS CONVITES
+# ======================================
+@router.get("/invites")
+def get_my_invites(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+
+    invites = (
+        db.query(RPGParticipant, RPG)
+        .join(
+            RPG,
+            RPG.id == RPGParticipant.rpg_id
+        )
+        .filter(
+            RPGParticipant.user_id == current_user.id,
+            RPGParticipant.status == "invited"
+        )
+        .all()
+    )
+
+    return [
+        {
+            "rpg_id": rpg.id,
+            "rpg_name": rpg.name,
+            "description": rpg.description,
+            "status": participant.status,
+        }
+        for participant, rpg in invites
+    ]
+
+# ======================================
+# ✅ ACEITAR CONVITE
+# ======================================
+@router.put("/invites/{rpg_id}/accept")
+def accept_invite(
+    rpg_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+
+    participant = (
+        db.query(RPGParticipant)
+        .filter(
+            RPGParticipant.rpg_id == rpg_id,
+            RPGParticipant.user_id == current_user.id,
+            RPGParticipant.status == "invited"
+        )
+        .first()
+    )
+
+    if not participant:
+        raise HTTPException(
+            status_code=404,
+            detail="Convite não encontrado"
+        )
+
+    participant.status = "accepted"
+
+    db.commit()
+
+    return {
+        "message": "Convite aceito"
+    }
+
+# ======================================
+# ❌ RECUSAR CONVITE
+# ======================================
+@router.put("/invites/{rpg_id}/reject")
+def reject_invite(
+    rpg_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+
+    participant = (
+        db.query(RPGParticipant)
+        .filter(
+            RPGParticipant.rpg_id == rpg_id,
+            RPGParticipant.user_id == current_user.id,
+            RPGParticipant.status == "invited"
+        )
+        .first()
+    )
+
+    if not participant:
+        raise HTTPException(
+            status_code=404,
+            detail="Convite não encontrado"
+        )
+
+    participant.status = "rejected"
+
+    db.commit()
+
+    return {
+        "message": "Convite recusado"
+    }
+
 @router.post("/{rpg_id}/request")
 def request_to_join(
     rpg_id: int,
@@ -293,105 +393,6 @@ def invite_participant(
         "message": "Convite enviado com sucesso"
     }
 
-# ======================================
-# 📨 MEUS CONVITES
-# ======================================
-@router.get("/invites")
-def get_my_invites(
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-
-    invites = (
-        db.query(RPGParticipant, RPG)
-        .join(
-            RPG,
-            RPG.id == RPGParticipant.rpg_id
-        )
-        .filter(
-            RPGParticipant.user_id == current_user.id,
-            RPGParticipant.status == "invited"
-        )
-        .all()
-    )
-
-    return [
-        {
-            "rpg_id": rpg.id,
-            "rpg_name": rpg.name,
-            "description": rpg.description,
-            "status": participant.status,
-        }
-        for participant, rpg in invites
-    ]
-
-# ======================================
-# ✅ ACEITAR CONVITE
-# ======================================
-@router.put("/invites/{rpg_id}/accept")
-def accept_invite(
-    rpg_id: int,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-
-    participant = (
-        db.query(RPGParticipant)
-        .filter(
-            RPGParticipant.rpg_id == rpg_id,
-            RPGParticipant.user_id == current_user.id,
-            RPGParticipant.status == "invited"
-        )
-        .first()
-    )
-
-    if not participant:
-        raise HTTPException(
-            status_code=404,
-            detail="Convite não encontrado"
-        )
-
-    participant.status = "accepted"
-
-    db.commit()
-
-    return {
-        "message": "Convite aceito"
-    }
-
-# ======================================
-# ❌ RECUSAR CONVITE
-# ======================================
-@router.put("/invites/{rpg_id}/reject")
-def reject_invite(
-    rpg_id: int,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-
-    participant = (
-        db.query(RPGParticipant)
-        .filter(
-            RPGParticipant.rpg_id == rpg_id,
-            RPGParticipant.user_id == current_user.id,
-            RPGParticipant.status == "invited"
-        )
-        .first()
-    )
-
-    if not participant:
-        raise HTTPException(
-            status_code=404,
-            detail="Convite não encontrado"
-        )
-
-    participant.status = "rejected"
-
-    db.commit()
-
-    return {
-        "message": "Convite recusado"
-    }
 
 @router.get("/{rpg_id}", response_model=RPGResponse)
 def get_rpg_by_id(
