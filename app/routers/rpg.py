@@ -82,8 +82,13 @@ def get_my_rpgs(
         .all()
     )
 
-    return rpgs
-
+    return [
+        {
+            **rpg.__dict__,
+            "is_owner": rpg.owner_id == current_user.id
+        }
+        for rpg in rpgs
+    ]
 
 @router.post("/{rpg_id}/request")
 def request_to_join(
@@ -319,6 +324,74 @@ def get_my_invites(
         }
         for participant, rpg in invites
     ]
+
+# ======================================
+# ✅ ACEITAR CONVITE
+# ======================================
+@router.put("/invites/{rpg_id}/accept")
+def accept_invite(
+    rpg_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+
+    participant = (
+        db.query(RPGParticipant)
+        .filter(
+            RPGParticipant.rpg_id == rpg_id,
+            RPGParticipant.user_id == current_user.id,
+            RPGParticipant.status == "invited"
+        )
+        .first()
+    )
+
+    if not participant:
+        raise HTTPException(
+            status_code=404,
+            detail="Convite não encontrado"
+        )
+
+    participant.status = "accepted"
+
+    db.commit()
+
+    return {
+        "message": "Convite aceito"
+    }
+
+# ======================================
+# ❌ RECUSAR CONVITE
+# ======================================
+@router.put("/invites/{rpg_id}/reject")
+def reject_invite(
+    rpg_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+
+    participant = (
+        db.query(RPGParticipant)
+        .filter(
+            RPGParticipant.rpg_id == rpg_id,
+            RPGParticipant.user_id == current_user.id,
+            RPGParticipant.status == "invited"
+        )
+        .first()
+    )
+
+    if not participant:
+        raise HTTPException(
+            status_code=404,
+            detail="Convite não encontrado"
+        )
+
+    participant.status = "rejected"
+
+    db.commit()
+
+    return {
+        "message": "Convite recusado"
+    }
 
 @router.get("/{rpg_id}", response_model=RPGResponse)
 def get_rpg_by_id(
