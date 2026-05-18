@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from sqlalchemy.orm import Session
-
+import asyncio
 from app.db.session import get_db
 from app.models.rpg import RPG
 from app.models.rpg_participant import RPGParticipant
@@ -10,6 +10,7 @@ from app.models.user import User
 from app.core.security import get_current_user
 import shutil
 import os
+from app.websockets.manager import manager
 
 
 router = APIRouter(prefix="/rpgs", tags=["RPGs"])
@@ -389,9 +390,23 @@ def invite_participant(
     db.add(invite)
     db.commit()
 
+# 🔔 notificação em tempo real
+    asyncio.create_task(
+        manager.send_to_user(
+            user_id=data.user_id,
+            data={
+                "type": "notification",
+                "message": (
+                    f"🎮 Você foi convidada para {rpg.name}"
+                ),
+                "rpg_id": rpg.id,
+            }
+        )
+    )
     return {
-        "message": "Convite enviado com sucesso"
-    }
+                "message": "Convite enviado com sucesso"
+            }
+
 
 
 @router.get("/{rpg_id}", response_model=RPGResponse)
