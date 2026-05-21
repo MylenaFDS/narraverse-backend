@@ -36,10 +36,11 @@ async def send_message(
         raise HTTPException(403, "Você não participa deste RPG")
 
     message = RPGMessage(
-        content=message_data.content,
-        user_id=current_user.id,
-        rpg_id=rpg_id
-    )
+    content=message_data.content,
+    user_id=current_user.id,
+    rpg_id=rpg_id,
+    reply_to_message_id=message_data.reply_to_message_id
+)
 
     db.add(message)
     db.commit()
@@ -55,38 +56,129 @@ async def send_message(
                 "content": message.content,
                 "user_id": message.user_id,
                 "username": current_user.username,
-                "created_at": message.created_at.isoformat()
-            }
+                "created_at": message.created_at.isoformat(),
+                "reply_to_message_id": message.reply_to_message_id,
+}
         }
     )
 
-    return message
+    reply_to = None
+
+    if message.reply_to_message_id:
+        replied = (
+            db.query(
+                RPGMessage,
+                User.username
+            )
+            .join(
+                User,
+                User.id == RPGMessage.user_id
+            )
+            .filter(
+                RPGMessage.id
+                == message.reply_to_message_id
+            )
+            .first()
+        )
+
+        if replied:
+            reply_to = {
+                "id":
+                    replied.RPGMessage.id,
+                "content":
+                    replied.RPGMessage.content,
+                "username":
+                    replied.username,
+            }
+
+    return {
+        "id": message.id,
+        "content": message.content,
+        "user_id": message.user_id,
+        "rpg_id": message.rpg_id,
+        "created_at": message.created_at,
+        "reply_to_message_id":
+            message.reply_to_message_id,
+        "reply_to":
+            reply_to,
+    }
 
 
 # ===============================
 # LIST (CORRIGIDO)
 # ===============================
 @router.get("/{rpg_id}")
-def list_messages(rpg_id: int, db: Session = Depends(get_db)):
+def list_messages(
+    rpg_id: int,
+    db: Session = Depends(get_db)
+):
     messages = (
-        db.query(RPGMessage, User.username)
-        .join(User, User.id == RPGMessage.user_id)
-        .filter(RPGMessage.rpg_id == rpg_id)
-        .order_by(RPGMessage.created_at.asc())
+        db.query(
+            RPGMessage,
+            User.username
+        )
+        .join(
+            User,
+            User.id == RPGMessage.user_id
+        )
+        .filter(
+            RPGMessage.rpg_id == rpg_id
+        )
+        .order_by(
+            RPGMessage.created_at.asc()
+        )
         .all()
     )
 
-    return [
-        {
-            "id": m.RPGMessage.id,
-            "content": m.RPGMessage.content,
-            "user_id": m.RPGMessage.user_id,
-            "username": m.username,
-            "created_at": m.RPGMessage.created_at,
-        }
-        for m in messages
-    ]
+    result = []
 
+    for row in messages:
+        msg = row.RPGMessage
+
+        reply_to = None
+
+        # 🔥 busca mensagem respondida
+        if msg.reply_to_message_id:
+            replied = (
+                db.query(
+                    RPGMessage,
+                    User.username
+                )
+                .join(
+                    User,
+                    User.id == RPGMessage.user_id
+                )
+                .filter(
+                    RPGMessage.id
+                    == msg.reply_to_message_id
+                )
+                .first()
+            )
+
+            if replied:
+                reply_to = {
+                    "id":
+                        replied.RPGMessage.id,
+                    "content":
+                        replied.RPGMessage.content,
+                    "username":
+                        replied.username,
+                }
+
+        result.append({
+            "id": msg.id,
+            "content": msg.content,
+            "user_id": msg.user_id,
+            "username": row.username,
+            "rpg_id": msg.rpg_id,
+            "created_at": msg.created_at,
+            "reply_to_message_id":
+                msg.reply_to_message_id,
+            "reply_to":
+                reply_to,
+        })
+
+    return result
 
 # ===============================
 # EDIT
