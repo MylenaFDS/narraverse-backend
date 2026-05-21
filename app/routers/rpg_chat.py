@@ -11,11 +11,13 @@ from app.websockets.manager import manager
 
 router = APIRouter(prefix="/rpg-chat", tags=["RPG Chat"])
 
-
 # ===============================
 # SEND
 # ===============================
-@router.post("/{rpg_id}", response_model=RPGChatMessageResponse)
+@router.post(
+    "/{rpg_id}",
+    response_model=RPGChatMessageResponse
+)
 async def send_message(
     rpg_id: int,
     message_data: RPGChatMessageCreate,
@@ -33,35 +35,24 @@ async def send_message(
     )
 
     if not participant:
-        raise HTTPException(403, "Você não participa deste RPG")
+        raise HTTPException(
+            403,
+            "Você não participa deste RPG"
+        )
 
     message = RPGMessage(
-    content=message_data.content,
-    user_id=current_user.id,
-    rpg_id=rpg_id,
-    reply_to_message_id=message_data.reply_to_message_id
-)
+        content=message_data.content,
+        user_id=current_user.id,
+        rpg_id=rpg_id,
+        reply_to_message_id=
+            message_data.reply_to_message_id,
+    )
 
     db.add(message)
     db.commit()
     db.refresh(message)
 
-    await manager.broadcast(
-        rpg_id,
-        "chat",
-        {
-            "type": "message",
-            "data": {
-                "id": message.id,
-                "content": message.content,
-                "user_id": message.user_id,
-                "username": current_user.username,
-                "created_at": message.created_at.isoformat(),
-                "reply_to_message_id": message.reply_to_message_id,
-}
-        }
-    )
-
+    # 🔥 monta reply completo
     reply_to = None
 
     if message.reply_to_message_id:
@@ -91,12 +82,39 @@ async def send_message(
                     replied.username,
             }
 
+    # 🔥 broadcast já com reply
+    await manager.broadcast(
+        rpg_id,
+        "chat",
+        {
+            "type": "message",
+            "data": {
+                "id": message.id,
+                "content": message.content,
+                "user_id": message.user_id,
+                "username":
+                    current_user.username,
+                "created_at":
+                    message.created_at.isoformat(),
+
+                "reply_to_message_id":
+                    message.reply_to_message_id,
+
+                "reply_to":
+                    reply_to,
+            }
+        }
+    )
+
     return {
         "id": message.id,
         "content": message.content,
         "user_id": message.user_id,
         "rpg_id": message.rpg_id,
-        "created_at": message.created_at,
+        "created_at":
+            message.created_at,
+        "username":
+            current_user.username,
         "reply_to_message_id":
             message.reply_to_message_id,
         "reply_to":
@@ -104,8 +122,9 @@ async def send_message(
     }
 
 
+
 # ===============================
-# LIST (CORRIGIDO)
+# LIST
 # ===============================
 @router.get("/{rpg_id}")
 def list_messages(
@@ -137,7 +156,6 @@ def list_messages(
 
         reply_to = None
 
-        # 🔥 busca mensagem respondida
         if msg.reply_to_message_id:
             replied = (
                 db.query(
@@ -179,7 +197,6 @@ def list_messages(
         })
 
     return result
-
 # ===============================
 # EDIT
 # ===============================
