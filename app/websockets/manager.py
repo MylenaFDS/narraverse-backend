@@ -91,22 +91,24 @@ class ConnectionManager:
         message: dict,
         exclude_user: int | None = None
     ):
-        connections = self.rooms.get(rpg_id, {}).get(room, [])
+        connections = (
+            self.rooms
+            .get(rpg_id, {})
+            .get(room, [])
+        )
+
         dead = []
 
         for conn in connections:
             try:
-                if exclude_user:
-                    user_conns = self.user_connections.get(exclude_user, [])
-                    if conn in user_conns:
-                        continue
-
+                # 🔥 remove bug
                 await conn.send_json(message)
 
-            except Exception:
+            except Exception as e:
+                print("WS send error:", e)
                 dead.append(conn)
 
-        # remove conexões mortas
+        # limpa mortos
         for conn in dead:
             if conn in connections:
                 connections.remove(conn)

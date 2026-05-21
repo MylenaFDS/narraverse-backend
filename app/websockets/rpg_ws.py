@@ -61,6 +61,9 @@ async def websocket_endpoint(websocket: WebSocket, rpg_id: int, room: str):
         while True:
             try:
                 data = await websocket.receive_json()
+
+                print("📩 WS CHAT RECEBEU:", data)
+                
                 msg_type = data.get("type")
 
                 if msg_type == "typing_start":
