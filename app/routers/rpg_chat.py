@@ -190,6 +190,8 @@ def list_messages(
             "username": row.username,
             "rpg_id": msg.rpg_id,
             "created_at": msg.created_at,
+            "is_edited": 
+                msg.created_at != msg.updated_at,
             "reply_to_message_id":
                 msg.reply_to_message_id,
             "reply_to":
@@ -225,9 +227,10 @@ async def update_message(
         {
             "type": "edit",
             "data": {
-                "id": msg.id,
-                "content": msg.content,
-            }
+    "id": msg.id,
+    "content": msg.content,
+    "is_edited": False,
+}
         }
     )
 
