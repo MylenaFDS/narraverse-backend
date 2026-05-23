@@ -9,6 +9,8 @@ from app.schemas.rpg_chat import RPGChatMessageCreate, RPGChatMessageResponse
 from app.core.security import get_current_user
 from app.websockets.manager import manager
 from datetime import datetime, UTC
+import re
+from app.models.notification import Notification
 
 router = APIRouter(prefix="/rpg-chat", tags=["RPG Chat"])
 
@@ -52,6 +54,51 @@ async def send_message(
     db.add(message)
     db.commit()
     db.refresh(message)
+    mentioned_usernames = set(
+        re.findall(
+            r"@(\w+)",
+            message_data.content
+        )
+    )
+
+    mentioned_users = []
+
+    if mentioned_usernames:
+        mentioned_users = (
+            db.query(User)
+            .filter(
+                User.username.in_(
+                    mentioned_usernames
+                ),
+                User.id != current_user.id
+            )
+            .all()
+        )
+
+        for mentioned_user in mentioned_users:
+
+            notification = Notification(
+                user_id=mentioned_user.id,
+                message=(
+                    f"{current_user.username} mencionou você no chat"
+                )
+            )
+
+            db.add(notification)
+
+            await manager.send_to_user(
+                mentioned_user.id,
+                {
+                    "type": "notification",
+                    "message": (
+                        f"{current_user.username} mencionou você no chat"
+                    ),
+                    "rpg_id": rpg_id,
+                    "chat_message_id": message.id,
+                }
+            )
+
+        db.commit()
 
     # 🔥 monta reply completo
     reply_to = None
