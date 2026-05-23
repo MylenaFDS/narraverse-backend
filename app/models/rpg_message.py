@@ -6,7 +6,7 @@ from sqlalchemy import (
     DateTime
 )
 from sqlalchemy.orm import relationship
-from datetime import datetime
+from datetime import datetime, UTC
 
 from app.db.base import Base
 
@@ -52,6 +52,12 @@ class RPGMessage(Base):
     )
 
     created_at = Column(
-        DateTime,
-        default=datetime.utcnow
+        DateTime(timezone=True),
+        default=lambda:
+            datetime.now(UTC)
+    )
+
+    updated_at = Column(
+        DateTime(timezone=True),
+        nullable=True
     )

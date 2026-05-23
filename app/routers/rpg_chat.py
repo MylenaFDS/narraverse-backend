@@ -8,6 +8,7 @@ from app.models.user import User
 from app.schemas.rpg_chat import RPGChatMessageCreate, RPGChatMessageResponse
 from app.core.security import get_current_user
 from app.websockets.manager import manager
+from datetime import datetime, UTC
 
 router = APIRouter(prefix="/rpg-chat", tags=["RPG Chat"])
 
@@ -96,6 +97,7 @@ async def send_message(
                     current_user.username,
                 "created_at":
                     message.created_at.isoformat(),
+                "is_edited": False,
 
                 "reply_to_message_id":
                     message.reply_to_message_id,
@@ -113,6 +115,7 @@ async def send_message(
         "rpg_id": message.rpg_id,
         "created_at":
             message.created_at,
+            "is_edited": False,
         "username":
             current_user.username,
         "reply_to_message_id":
@@ -190,7 +193,9 @@ def list_messages(
             "username": row.username,
             "rpg_id": msg.rpg_id,
             "created_at": msg.created_at,
-            "is_edited": False,
+            "is_edited":
+            msg.updated_at is not None
+            and msg.updated_at != msg.created_at,
             "reply_to_message_id":
                 msg.reply_to_message_id,
             "reply_to":
@@ -217,6 +222,7 @@ async def update_message(
         raise HTTPException(403, "Sem permissão")
 
     msg.content = message_data.content
+    msg.updated_at = datetime.now(UTC)
     db.commit()
     db.refresh(msg)
 
