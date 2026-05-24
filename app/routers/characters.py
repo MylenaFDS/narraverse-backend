@@ -1,12 +1,15 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException,UploadFile, File
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
 from app.models.rpg_participant import RPGParticipant
 from app.models.user import User
+from app.models.character import Character
 from app.schemas.character import CharacterCreate, CharacterResponse
 from app.core.security import get_current_user
 from app.services.character_service import create_character, list_characters
+import os
+import shutil
 
 router = APIRouter(prefix="/characters", tags=["Characters"])
 
@@ -54,3 +57,43 @@ def list_characters_route(
 ):
     return list_characters(db, rpg_id)
 
+@router.post("/{character_id}/image")
+def upload_character_image(
+    character_id: int,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    character = (
+        db.query(Character)
+        .filter(Character.id == character_id)
+        .first()
+    )
+
+    if not character:
+        raise HTTPException(
+            status_code=404,
+            detail="Personagem não encontrado"
+        )
+
+    if character.user_id != current_user.id:
+        raise HTTPException(
+            status_code=403,
+            detail="Sem permissão"
+        )
+
+    upload_dir = "uploads/characters"
+    os.makedirs(upload_dir, exist_ok=True)
+
+    filename = f"character_{character_id}_{file.filename}"
+    file_path = os.path.join(upload_dir, filename)
+
+    with open(file_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+
+    character.image_url = file_path.replace("\\", "/")
+
+    db.commit()
+    db.refresh(character)
+
+    return character
