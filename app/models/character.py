@@ -18,6 +18,9 @@ class Character(Base):
         ForeignKey("rpg_lore.id"),
         nullable=True
     )
+
+    image_url = Column(String, nullable=True)
+    
     # ⚠️ mantém por compatibilidade (pode remover depois com migração)
     sheet = Column(Text, nullable=True)
 

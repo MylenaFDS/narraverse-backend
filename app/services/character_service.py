@@ -10,6 +10,7 @@ def create_character(db: Session, user_id: int, rpg_id: int, data):
         description=data.description,
         history=data.history,
         world_lore_id=data.world_lore_id,
+        image_url=data.image_url,
         user_id=user_id,
         rpg_id=rpg_id,
     )

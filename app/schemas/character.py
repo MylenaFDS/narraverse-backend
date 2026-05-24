@@ -13,6 +13,7 @@ class CharacterCreate(BaseModel):
     history: str
     world_lore_id: int
     sheet: Optional[List[SheetValueInput]] = []
+    image_url: Optional[str] = None
 
 
 class CharacterResponse(BaseModel):
@@ -23,5 +24,6 @@ class CharacterResponse(BaseModel):
     world_lore_id: Optional[int] = None
     user_id: int
     rpg_id: int
+    image_url: Optional[str] = None
     class Config:
         from_attributes = True
