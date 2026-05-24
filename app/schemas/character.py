@@ -19,10 +19,9 @@ class CharacterResponse(BaseModel):
     id: int
     name: str
     description: Optional[str]
-    history: str
-    world_lore_id: int
+    history: Optional[str] = None
+    world_lore_id: Optional[int] = None
     user_id: int
     rpg_id: int
-
     class Config:
         from_attributes = True

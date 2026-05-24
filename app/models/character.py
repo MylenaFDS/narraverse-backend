@@ -11,14 +11,13 @@ class Character(Base):
 
     name = Column(String(120), nullable=False)
     description = Column(Text, nullable=True)
-    history = Column(Text, nullable=False)
+    history = Column(Text, nullable=True)
 
     world_lore_id = Column(
         Integer,
         ForeignKey("rpg_lore.id"),
-        nullable=False
+        nullable=True
     )
-
     # ⚠️ mantém por compatibilidade (pode remover depois com migração)
     sheet = Column(Text, nullable=True)
 
