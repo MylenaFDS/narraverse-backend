@@ -6,6 +6,7 @@ from app.models.rpg import RPG
 from app.models.rpg_sheet_field import RPGSheetField
 from app.models.user import User
 from app.schemas.rpg_sheet_field import RPGSheetFieldCreate, RPGSheetFieldResponse
+from app.models.character_sheet_value import CharacterSheetValue
 from app.core.security import get_current_user
 
 router = APIRouter(prefix="/rpg-sheet-fields", tags=["RPG Sheet Fields"])
@@ -137,7 +138,10 @@ def delete_field(
             status_code=403,
             detail="Apenas o criador do RPG pode excluir os campos da ficha"
         )
-
+    
+    db.query(CharacterSheetValue).filter(
+    CharacterSheetValue.field_id == field.id
+    ).delete()
     db.delete(field)
     db.commit()
 
