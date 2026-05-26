@@ -101,3 +101,44 @@ def update_field(
     db.refresh(field)
 
     return field
+
+@router.delete("/{field_id}")
+def delete_field(
+    field_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    field = (
+        db.query(RPGSheetField)
+        .filter(RPGSheetField.id == field_id)
+        .first()
+    )
+
+    if not field:
+        raise HTTPException(
+            status_code=404,
+            detail="Campo não encontrado"
+        )
+
+    rpg = (
+        db.query(RPG)
+        .filter(RPG.id == field.rpg_id)
+        .first()
+    )
+
+    if not rpg:
+        raise HTTPException(
+            status_code=404,
+            detail="RPG não encontrado"
+        )
+
+    if rpg.owner_id != current_user.id:
+        raise HTTPException(
+            status_code=403,
+            detail="Apenas o criador do RPG pode excluir os campos da ficha"
+        )
+
+    db.delete(field)
+    db.commit()
+
+    return {"message": "Campo excluído com sucesso"}
