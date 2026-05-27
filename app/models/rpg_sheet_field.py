@@ -13,4 +13,6 @@ class RPGSheetField(Base):
     name = Column(String(100), nullable=False)
     field_type = Column(String(50), default="text")
 
+    category = Column(String, nullable=True)
+
     rpg = relationship("RPG")

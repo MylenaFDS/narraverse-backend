@@ -32,10 +32,11 @@ def create_field(
         )
 
     field = RPGSheetField(
-        rpg_id=rpg_id,
-        name=field_data.name,
-        field_type=field_data.field_type
-    )
+    rpg_id=rpg_id,
+    name=field_data.name,
+    field_type=field_data.field_type,
+    category=field_data.category
+)
 
     db.add(field)
     db.commit()
@@ -97,6 +98,7 @@ def update_field(
         )
 
     field.name = field_data.name
+    field.category = field_data.category
 
     db.commit()
     db.refresh(field)
