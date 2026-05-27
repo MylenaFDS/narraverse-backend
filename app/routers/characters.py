@@ -8,6 +8,7 @@ from app.models.character import Character
 from app.schemas.character import CharacterCreate, CharacterResponse
 from app.core.security import get_current_user
 from app.services.character_service import create_character, list_characters
+from app.models.character_sheet_value import CharacterSheetValue
 from typing import Optional
 import os
 import shutil
@@ -148,3 +149,39 @@ def upload_character_image(
     db.refresh(character)
 
     return character
+
+@router.delete("/{character_id}")
+def delete_character(
+    character_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    character = (
+        db.query(Character)
+        .filter(Character.id == character_id)
+        .first()
+    )
+
+    if not character:
+        raise HTTPException(
+            status_code=404,
+            detail="Personagem não encontrado"
+        )
+
+    if character.user_id != current_user.id:
+        raise HTTPException(
+            status_code=403,
+            detail="Sem permissão"
+        )
+
+    # Remove valores da ficha
+    db.query(CharacterSheetValue).filter(
+        CharacterSheetValue.character_id == character.id
+    ).delete()
+
+    db.delete(character)
+    db.commit()
+
+    return {
+        "message": "Personagem excluído com sucesso"
+    }
