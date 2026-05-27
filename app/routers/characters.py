@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException,UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
@@ -8,6 +8,7 @@ from app.models.character import Character
 from app.schemas.character import CharacterCreate, CharacterResponse
 from app.core.security import get_current_user
 from app.services.character_service import create_character, list_characters
+from typing import Optional
 import os
 import shutil
 
@@ -50,6 +51,56 @@ def get_my_characters(
     return db.query(Character).filter(
         Character.user_id == current_user.id
     ).all()
+
+@router.put("/{character_id}", response_model=CharacterResponse)
+def update_character_route(
+    character_id: int,
+    name: str = Form(...),
+    history: str = Form(...),
+    world_lore_id: Optional[int] = Form(None),
+    image: Optional[UploadFile] = File(None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    character = (
+        db.query(Character)
+        .filter(Character.id == character_id)
+        .first()
+    )
+
+    if not character:
+        raise HTTPException(
+            status_code=404,
+            detail="Personagem não encontrado"
+        )
+
+    if character.user_id != current_user.id:
+        raise HTTPException(
+            status_code=403,
+            detail="Sem permissão"
+        )
+
+    character.name = name
+    character.history = history
+    character.world_lore_id = world_lore_id
+
+    if image:
+        upload_dir = "uploads/characters"
+        os.makedirs(upload_dir, exist_ok=True)
+
+        filename = f"character_{character_id}_{image.filename}"
+        file_path = os.path.join(upload_dir, filename)
+
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(image.file, buffer)
+
+        character.image_url = file_path.replace("\\", "/")
+
+    db.commit()
+    db.refresh(character)
+
+    return character
+
 @router.get("/{rpg_id}", response_model=list[CharacterResponse])
 def list_characters_route(
     rpg_id: int,
