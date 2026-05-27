@@ -27,6 +27,12 @@ def upsert_character_sheet(
     if not character:
         raise HTTPException(status_code=404, detail="Personagem não encontrado")
 
+    if character.user_id != current_user.id:
+        raise HTTPException(
+            status_code=403,
+            detail="Você só pode editar a ficha dos seus próprios personagens"
+        )
+
     participant = (
         db.query(RPGParticipant)
         .filter(
