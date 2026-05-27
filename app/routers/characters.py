@@ -9,6 +9,7 @@ from app.schemas.character import CharacterCreate, CharacterResponse
 from app.core.security import get_current_user
 from app.services.character_service import create_character, list_characters
 from app.models.character_sheet_value import CharacterSheetValue
+from app.models.rpg_turn import RPGTurn
 from typing import Optional
 import os
 import shutil
@@ -179,9 +180,20 @@ def delete_character(
         CharacterSheetValue.character_id == character.id
     ).delete()
 
-    db.delete(character)
-    db.commit()
+    # Remove turnos do personagem
+    turns = db.query(RPGTurn).filter(
+        RPGTurn.character_id == character.id
+    ).all()
 
+    for turn in turns:
+        db.delete(turn)
+
+    db.flush()
+
+    # Remove personagem
+    db.delete(character)
+
+    db.commit()
     return {
         "message": "Personagem excluído com sucesso"
     }
