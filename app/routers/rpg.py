@@ -65,7 +65,16 @@ def create_rpg(
     db.add(owner_participation)
     db.commit()
 
-    return new_rpg
+    return {
+    "id": new_rpg.id,
+    "name": new_rpg.name,
+    "description": new_rpg.description,
+    "banner_url": new_rpg.banner_url,
+    "tags": [tag.name for tag in new_rpg.tags],
+    "owner_id": new_rpg.owner_id,
+    "is_owner": True,
+    "world_map": new_rpg.world_map,
+}
 
 
 @router.get("/me", response_model=list[RPGResponse])
@@ -416,7 +425,8 @@ def list_rpgs(
     return [
     {
         **rpg.__dict__,
-        "is_owner": False
+        "is_owner": False,
+        "tags": [tag.name for tag in rpg.tags]
     }
     for rpg in rpgs
 ]

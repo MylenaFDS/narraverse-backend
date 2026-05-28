@@ -43,4 +43,8 @@ class RPG(Base):
         cascade="all, delete-orphan"
     )
 
-    tags = relationship("Tag", secondary=rpg_tags, backref="rpgs")
+    tags = relationship(
+    "Tag",
+    secondary=rpg_tags,
+    back_populates="rpgs"
+)
