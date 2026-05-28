@@ -407,7 +407,19 @@ def invite_participant(
                 "message": "Convite enviado com sucesso"
             }
 
+@router.get("/", response_model=list[RPGResponse])
+def list_rpgs(
+    db: Session = Depends(get_db),
+):
+    rpgs = db.query(RPG).all()
 
+    return [
+    {
+        **rpg.__dict__,
+        "is_owner": False
+    }
+    for rpg in rpgs
+]
 
 @router.get("/{rpg_id}", response_model=RPGResponse)
 def get_rpg_by_id(
