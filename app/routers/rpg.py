@@ -548,3 +548,34 @@ def upload_rpg_banner(
     db.refresh(rpg)
 
     return rpg
+
+@router.delete("/{rpg_id}")
+def delete_rpg(
+    rpg_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    rpg = (
+        db.query(RPG)
+        .filter(RPG.id == rpg_id)
+        .first()
+    )
+
+    if not rpg:
+        raise HTTPException(
+            status_code=404,
+            detail="RPG não encontrado"
+        )
+
+    if rpg.owner_id != current_user.id:
+        raise HTTPException(
+            status_code=403,
+            detail="Sem permissão"
+        )
+
+    db.delete(rpg)
+    db.commit()
+
+    return {
+        "message": "RPG deletado"
+    }
