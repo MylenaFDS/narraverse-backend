@@ -485,3 +485,44 @@ def upload_map_image(
         "message": "Mapa enviado",
         "world_map": filepath,
     }
+
+@router.post("/{rpg_id}/banner")
+def upload_rpg_banner(
+    rpg_id: int,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    rpg = (
+        db.query(RPG)
+        .filter(RPG.id == rpg_id)
+        .first()
+    )
+
+    if not rpg:
+        raise HTTPException(
+            status_code=404,
+            detail="RPG não encontrado"
+        )
+
+    if rpg.owner_id != current_user.id:
+        raise HTTPException(
+            status_code=403,
+            detail="Sem permissão"
+        )
+
+    upload_dir = "uploads/rpg_banners"
+    os.makedirs(upload_dir, exist_ok=True)
+
+    filename = f"rpg_{rpg_id}_{file.filename}"
+    file_path = os.path.join(upload_dir, filename)
+
+    with open(file_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+
+    rpg.banner_url = file_path.replace("\\", "/")
+
+    db.commit()
+    db.refresh(rpg)
+
+    return rpg

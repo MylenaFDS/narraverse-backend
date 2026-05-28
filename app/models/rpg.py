@@ -12,6 +12,9 @@ class RPG(Base):
     name = Column(String(150), nullable=False, index=True)
     description = Column(Text, nullable=True)
 
+    # 🖼️ BANNER DO RPG
+    banner_url = Column(String, nullable=True)
+
     # 🗺️ MAPA DO MUNDO
     world_map = Column(String, nullable=True)
     map_regions = relationship(
