@@ -464,13 +464,18 @@ def list_rpg_players(
         .all()
     )
 
+    rpg = db.query(RPG).filter(
+    RPG.id == rpg_id
+).first()
+
     return [
-        {
-            "id": player.id,
-            "username": player.username,
-        }
-        for player in players
-    ]
+    {
+        "id": player.id,
+        "username": player.username,
+        "is_owner": player.id == rpg.owner_id,
+    }
+    for player in players
+]
 
 @router.get("/{rpg_id}/stats")
 def get_rpg_stats(
