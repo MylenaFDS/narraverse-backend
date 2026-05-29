@@ -5,6 +5,9 @@ from app.db.session import get_db
 from app.models.rpg import RPG
 from app.models.rpg_participant import RPGParticipant
 from app.models.tag import Tag
+from app.models.rpg_turn import RPGTurn
+from app.models.rpg_lore import RPGLore
+from app.models.character import Character
 from app.schemas.rpg import RPGCreate, RPGResponse, RPGInvite
 from app.models.user import User
 from app.core.security import get_current_user
@@ -456,16 +459,46 @@ def list_rpg_players(
         }
         for player in players
     ]
+
 @router.get("/{rpg_id}/stats")
 def get_rpg_stats(
     rpg_id: int,
     db: Session = Depends(get_db),
-):{
-    "players": ...,
-    "turns": ...,
-    "lore": ...,
-    "characters": ...
-}
+):
+    players = (
+        db.query(RPGParticipant)
+        .filter(
+            RPGParticipant.rpg_id == rpg_id,
+            RPGParticipant.status == "accepted"
+        )
+        .count()
+    )
+
+    turns = (
+        db.query(RPGTurn)
+        .filter(RPGTurn.rpg_id == rpg_id)
+        .count()
+    )
+
+    lore = (
+        db.query(RPGLore)
+        .filter(RPGLore.rpg_id == rpg_id)
+        .count()
+    )
+
+    characters = (
+        db.query(Character)
+        .filter(Character.rpg_id == rpg_id)
+        .count()
+    )
+
+    return {
+        "players": players,
+        "turns": turns,
+        "lore": lore,
+        "characters": characters,
+    }
+
 @router.get("/{rpg_id}", response_model=RPGResponse)
 def get_rpg_by_id(
     rpg_id: int,
