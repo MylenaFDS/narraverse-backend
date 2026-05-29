@@ -20,6 +20,7 @@ class RPGResponse(BaseModel):
     tags: list[str] = []
     owner_id: int
     is_owner: bool
+    participant_count: int = 0
    
     # 🔥 ADICIONAR
     world_map: str | None = None

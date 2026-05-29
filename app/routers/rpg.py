@@ -71,6 +71,7 @@ def create_rpg(
     "description": new_rpg.description,
     "banner_url": new_rpg.banner_url,
     "tags": [tag.name for tag in new_rpg.tags],
+    "participant_count": len(new_rpg.participants),
     "owner_id": new_rpg.owner_id,
     "is_owner": True,
     "world_map": new_rpg.world_map,
@@ -402,15 +403,13 @@ def invite_participant(
 # 🔔 notificação em tempo real
     asyncio.create_task(
         manager.send_to_user(
-            user_id=data.user_id,
-            data={
-                "type": "notification",
-                "message": (
-                    f"🎮 Você foi convidada para {rpg.name}"
-                ),
-                "rpg_id": rpg.id,
-            }
-        )
+    user_id=data.user_id,
+    message={
+        "type": "notification",
+        "message": f"🎮 Você foi convidada para {rpg.name}",
+        "rpg_id": rpg.id,
+    }
+)
     )
     return {
                 "message": "Convite enviado com sucesso"
@@ -426,7 +425,8 @@ def list_rpgs(
     {
         **rpg.__dict__,
         "is_owner": False,
-        "tags": [tag.name for tag in rpg.tags]
+        "tags": [tag.name for tag in rpg.tags],
+        "participant_count": len(rpg.participants)
     }
     for rpg in rpgs
 ]
@@ -440,11 +440,21 @@ def get_rpg_by_id(
     rpg = db.query(RPG).filter(RPG.id == rpg_id).first()
 
     if not rpg:
-        raise HTTPException(status_code=404, detail="RPG não encontrado")
+        raise HTTPException(
+            status_code=404,
+            detail="RPG não encontrado"
+        )
 
     return {
-        **rpg.__dict__,
-        "is_owner": rpg.owner_id == current_user.id
+        "id": rpg.id,
+        "name": rpg.name,
+        "description": rpg.description,
+        "banner_url": rpg.banner_url,
+        "tags": [tag.name for tag in rpg.tags],
+        "participant_count": len(rpg.participants),
+        "owner_id": rpg.owner_id,
+        "is_owner": rpg.owner_id == current_user.id,
+        "world_map": rpg.world_map,
     }
 
 @router.get("/{rpg_id}/me")
