@@ -1,4 +1,5 @@
 from sqlalchemy import Column, Integer, String, Text, ForeignKey
+from sqlalchemy.orm import relationship
 
 from app.db.base import Base
 
@@ -13,3 +14,6 @@ class RPGNote(Base):
 
     rpg_id = Column(Integer, ForeignKey("rpgs.id"), nullable=False)
     author_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+
+    rpg = relationship("RPG")
+    author = relationship("User")

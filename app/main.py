@@ -16,6 +16,7 @@ from app.routers import feed
 from app.routers import rpg_lore
 from app.routers import map_regions
 from fastapi.staticfiles import StaticFiles
+from app.routers import rpg_notes
 
 # ✅ WEBSOCKETS
 from app.websockets.rpg_ws import router as ws_router
@@ -53,6 +54,7 @@ app.include_router(search.router)
 app.include_router(feed.router)
 app.include_router(rpg_lore.router)
 app.include_router(map_regions.router)
+app.include_router(rpg_notes.router)
 # 🔥 WS
 app.include_router(ws_router)
 app.include_router(ws_notifications_router)
