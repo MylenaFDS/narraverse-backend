@@ -9,6 +9,7 @@ from app.schemas.character import CharacterCreate, CharacterResponse
 from app.core.security import get_current_user
 from app.services.character_service import create_character, list_characters
 from app.models.character_sheet_value import CharacterSheetValue
+from app.models.rpg_sheet_field import RPGSheetField
 from app.models.rpg_turn import RPGTurn
 from typing import Optional
 import os
@@ -16,6 +17,74 @@ import shutil
 
 router = APIRouter(prefix="/characters", tags=["Characters"])
 
+@router.get("/rpg/{rpg_id}/public")
+def get_public_characters_by_rpg(
+    rpg_id: int,
+    db: Session = Depends(get_db),
+):
+    characters = (
+        db.query(Character)
+        .filter(Character.rpg_id == rpg_id)
+        .all()
+    )
+
+    return [
+        {
+            "id": char.id,
+            "name": char.name,
+            "image_url": char.image_url,
+            "user_id": char.user_id,
+        }
+        for char in characters
+    ]
+
+@router.get("/{character_id}/public")
+def get_public_character(
+    character_id: int,
+    db: Session = Depends(get_db),
+):
+    character = (
+        db.query(Character)
+        .filter(Character.id == character_id)
+        .first()
+    )
+
+    if not character:
+        raise HTTPException(
+            status_code=404,
+            detail="Personagem não encontrado"
+        )
+
+    sheet_values = (
+        db.query(CharacterSheetValue, RPGSheetField)
+        .join(
+            RPGSheetField,
+            RPGSheetField.id == CharacterSheetValue.field_id
+        )
+        .filter(
+            CharacterSheetValue.character_id == character.id
+        )
+        .all()
+    )
+
+    return {
+        "id": character.id,
+        "name": character.name,
+        "history": character.history,
+        "image_url": character.image_url,
+        "world_lore_id": character.world_lore_id,
+        "owner_id": character.user_id,
+        "owner_username": character.owner.username,
+        "sheet": [
+            {
+                "field_id": field.id,
+                "field_name": field.name,
+                "field_type": field.field_type,
+                "value": value.value,
+            }
+            for value, field in sheet_values
+        ],
+    }
 
 @router.post("/{rpg_id}", response_model=CharacterResponse)
 def create_character_route(
@@ -102,6 +171,8 @@ def update_character_route(
     db.refresh(character)
 
     return character
+
+
 
 @router.get("/{rpg_id}", response_model=list[CharacterResponse])
 def list_characters_route(
