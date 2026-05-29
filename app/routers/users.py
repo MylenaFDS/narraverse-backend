@@ -59,7 +59,63 @@ def update_me(
 
     return updated_user
 
+@router.get("/{user_id}/profile")
+def get_public_profile(
+    user_id: int,
+    db: Session = Depends(get_db),
+):
+    user = (
+        db.query(User)
+        .filter(User.id == user_id)
+        .first()
+    )
 
+    if not user:
+        raise HTTPException(
+            status_code=404,
+            detail="Usuário não encontrado"
+        )
+
+    owned_rpgs = (
+        db.query(RPG)
+        .filter(RPG.owner_id == user.id)
+        .all()
+    )
+
+    participating_rpgs = (
+        db.query(RPG)
+        .join(RPGParticipant)
+        .filter(
+            RPGParticipant.user_id == user.id,
+            RPGParticipant.status == "accepted",
+            RPG.owner_id != user.id,
+        )
+        .all()
+    )
+
+    return {
+        "id": user.id,
+        "username": user.username,
+        "bio": user.bio,
+        "owned_rpgs": [
+            {
+                "id": rpg.id,
+                "name": rpg.name,
+                "description": rpg.description,
+                "banner_url": rpg.banner_url,
+            }
+            for rpg in owned_rpgs
+        ],
+        "participating_rpgs": [
+            {
+                "id": rpg.id,
+                "name": rpg.name,
+                "description": rpg.description,
+                "banner_url": rpg.banner_url,
+            }
+            for rpg in participating_rpgs
+        ],
+    }
 # 🔹 BUSCAR POR ID
 @router.get("/{user_id}", response_model=UserResponse)
 def get_user(
