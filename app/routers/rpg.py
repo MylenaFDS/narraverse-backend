@@ -431,6 +431,41 @@ def list_rpgs(
     for rpg in rpgs
 ]
 
+@router.get("/{rpg_id}/players")
+def list_rpg_players(
+    rpg_id: int,
+    db: Session = Depends(get_db),
+):
+    players = (
+        db.query(User)
+        .join(
+            RPGParticipant,
+            RPGParticipant.user_id == User.id
+        )
+        .filter(
+            RPGParticipant.rpg_id == rpg_id,
+            RPGParticipant.status == "accepted"
+        )
+        .all()
+    )
+
+    return [
+        {
+            "id": player.id,
+            "username": player.username,
+        }
+        for player in players
+    ]
+@router.get("/{rpg_id}/stats")
+def get_rpg_stats(
+    rpg_id: int,
+    db: Session = Depends(get_db),
+):{
+    "players": ...,
+    "turns": ...,
+    "lore": ...,
+    "characters": ...
+}
 @router.get("/{rpg_id}", response_model=RPGResponse)
 def get_rpg_by_id(
     rpg_id: int,
