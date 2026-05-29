@@ -425,14 +425,26 @@ def list_rpgs(
     rpgs = db.query(RPG).all()
 
     return [
-    {
-        **rpg.__dict__,
-        "is_owner": False,
-        "tags": [tag.name for tag in rpg.tags],
-        "participant_count": len(rpg.participants)
-    }
-    for rpg in rpgs
-]
+        {
+            "id": rpg.id,
+            "name": rpg.name,
+            "description": rpg.description,
+            "banner_url": rpg.banner_url,
+            "tags": [tag.name for tag in rpg.tags],
+            "participant_count": (
+                db.query(RPGParticipant)
+                .filter(
+                    RPGParticipant.rpg_id == rpg.id,
+                    RPGParticipant.status == "accepted"
+                )
+                .count()
+            ),
+            "owner_id": rpg.owner_id,
+            "is_owner": False,
+            "world_map": rpg.world_map,
+        }
+        for rpg in rpgs
+    ]
 
 @router.get("/{rpg_id}/players")
 def list_rpg_players(
@@ -519,7 +531,14 @@ def get_rpg_by_id(
         "description": rpg.description,
         "banner_url": rpg.banner_url,
         "tags": [tag.name for tag in rpg.tags],
-        "participant_count": len(rpg.participants),
+        "participant_count": (
+    db.query(RPGParticipant)
+    .filter(
+        RPGParticipant.rpg_id == rpg.id,
+        RPGParticipant.status == "accepted"
+    )
+    .count()
+),
         "owner_id": rpg.owner_id,
         "is_owner": rpg.owner_id == current_user.id,
         "world_map": rpg.world_map,
