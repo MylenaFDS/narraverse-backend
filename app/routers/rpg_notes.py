@@ -30,7 +30,10 @@ def get_notes(
     return (
         db.query(RPGNote)
         .filter(RPGNote.rpg_id == rpg_id)
-        .order_by(RPGNote.id.desc())
+        .order_by(
+    RPGNote.is_pinned.desc(),
+    RPGNote.id.desc()
+)
         .all()
     )
 
@@ -117,6 +120,9 @@ def update_note(
 
     note.title = data.title
     note.content = data.content
+
+    if data.is_pinned is not None:
+        note.is_pinned = data.is_pinned
 
     db.commit()
     db.refresh(note)

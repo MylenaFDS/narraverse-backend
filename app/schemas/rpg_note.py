@@ -9,6 +9,7 @@ class RPGNoteCreate(BaseModel):
 class RPGNoteUpdate(BaseModel):
     title: str | None = None
     content: str | None = None
+    is_pinned: bool | None = None
 
 
 class RPGNoteResponse(BaseModel):
@@ -17,6 +18,7 @@ class RPGNoteResponse(BaseModel):
     content: str | None
     rpg_id: int
     author_id: int
+    is_pinned: bool
 
     class Config:
         from_attributes = True
