@@ -127,15 +127,19 @@ def get_my_invites(
     )
 
     return [
-        {
-            "rpg_id": rpg.id,
-            "rpg_name": rpg.name,
-            "description": rpg.description,
-            "status": participant.status,
-        }
-        for participant, rpg in invites
-    ]
+    {
+        "id": participant.id,
+        "rpg_id": rpg.id,
+        "status": participant.status,
 
+        "rpg": {
+            "id": rpg.id,
+            "name": rpg.name,
+            "description": rpg.description,
+        }
+    }
+    for participant, rpg in invites
+]
 # ======================================
 # ✅ ACEITAR CONVITE
 # ======================================
@@ -337,7 +341,7 @@ def update_participant_status(
 # 📨 CONVIDAR PARTICIPANTE
 # ======================================
 @router.post("/{rpg_id}/invite")
-def invite_participant(
+async def invite_participant(
     rpg_id: int,
     data: RPGInvite,
     db: Session = Depends(get_db),
@@ -404,15 +408,14 @@ def invite_participant(
     db.commit()
 
 # 🔔 notificação em tempo real
-    asyncio.create_task(
-        manager.send_to_user(
-    user_id=data.user_id,
-    message={
-        "type": "notification",
-        "message": f"🎮 Você foi convidada para {rpg.name}",
-        "rpg_id": rpg.id,
-    }
-)
+    # 🔔 notificação em tempo real
+    await manager.send_to_user(
+        user_id=data.user_id,
+        message={
+            "type": "notification",
+            "message": f"🎮 Você foi convidada para {rpg.name}",
+            "rpg_id": rpg.id,
+        }
     )
     return {
                 "message": "Convite enviado com sucesso"
