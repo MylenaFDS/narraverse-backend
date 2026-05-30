@@ -5,6 +5,7 @@ from app.db.deps import get_db
 from app.core.security import get_current_user
 
 from app.models.user import User
+from app.models.rpg import RPG
 from app.models.rpg_note import RPGNote
 
 from app.schemas.rpg_note import (
@@ -43,6 +44,24 @@ def create_note(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    rpg = (
+        db.query(RPG)
+        .filter(RPG.id == rpg_id)
+        .first()
+)
+
+    if not rpg:
+        raise HTTPException(
+            status_code=404,
+            detail="RPG não encontrado"
+        )
+
+    if rpg.owner_id != current_user.id:
+        raise HTTPException(
+            status_code=403,
+            detail="Apenas o dono do RPG pode criar anotações"
+        )
+
     note = RPGNote(
         title=data.title,
         content=data.content,
@@ -78,10 +97,22 @@ def update_note(
             detail="Nota não encontrada"
         )
 
-    if note.author_id != current_user.id:
+    rpg = (
+        db.query(RPG)
+        .filter(RPG.id == note.rpg_id)
+        .first()
+    )
+
+    if not rpg:
+        raise HTTPException(
+            status_code=404,
+            detail="RPG não encontrado"
+        )
+
+    if rpg.owner_id != current_user.id:
         raise HTTPException(
             status_code=403,
-            detail="Sem permissão"
+            detail="Apenas o dono do RPG pode editar anotações"
         )
 
     note.title = data.title
@@ -110,10 +141,22 @@ def delete_note(
             detail="Nota não encontrada"
         )
 
-    if note.author_id != current_user.id:
+    rpg = (
+        db.query(RPG)
+        .filter(RPG.id == note.rpg_id)
+        .first()
+    )
+
+    if not rpg:
+        raise HTTPException(
+            status_code=404,
+            detail="RPG não encontrado"
+        )
+
+    if rpg.owner_id != current_user.id:
         raise HTTPException(
             status_code=403,
-            detail="Sem permissão"
+            detail="Apenas o dono do RPG pode excluir anotações"
         )
 
     db.delete(note)
