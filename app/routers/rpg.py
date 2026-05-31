@@ -136,10 +136,12 @@ def get_my_invites(
             "id": rpg.id,
             "name": rpg.name,
             "description": rpg.description,
+            "banner_url": rpg.banner_url,
         }
     }
     for participant, rpg in invites
 ]
+
 # ======================================
 # ✅ ACEITAR CONVITE
 # ======================================
@@ -420,6 +422,61 @@ async def invite_participant(
     return {
                 "message": "Convite enviado com sucesso"
             }
+# ======================================
+# 📤 CONVITES ENVIADOS
+# ======================================
+@router.get("/{rpg_id}/invites/sent")
+def get_sent_invites(
+    rpg_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+
+    rpg = (
+        db.query(RPG)
+        .filter(RPG.id == rpg_id)
+        .first()
+    )
+
+    if not rpg:
+        raise HTTPException(
+            status_code=404,
+            detail="RPG não encontrado"
+        )
+
+    if rpg.owner_id != current_user.id:
+        raise HTTPException(
+            status_code=403,
+            detail="Sem permissão"
+        )
+
+    invites = (
+        db.query(
+            RPGParticipant,
+            User
+        )
+        .join(
+            User,
+            User.id == RPGParticipant.user_id
+        )
+        .filter(
+            RPGParticipant.rpg_id == rpg_id,
+            RPGParticipant.status == "invited",
+        )
+        .all()
+    )
+
+    return [
+        {
+            "id": invite.id,
+            "status": invite.status,
+            "user": {
+                "id": user.id,
+                "username": user.username,
+            },
+        }
+        for invite, user in invites
+    ]
 
 @router.get("/", response_model=list[RPGResponse])
 def list_rpgs(
