@@ -12,6 +12,7 @@ from app.core.security import get_current_user
 from app.models.user import User
 from app.models.rpg import RPG
 from app.models.rpg_timeline import RPGTimeline
+from app.models.rpg_lore import RPGLore
 
 from app.schemas.rpg_timeline import (
     RPGTimelineCreate,
@@ -73,15 +74,30 @@ def create_event(
             status_code=403,
             detail="Apenas o mestre pode criar eventos",
         )
-
+    if data.lore_id:
+        lore = (
+            db.query(RPGLore)
+            .filter(
+                RPGLore.id == data.lore_id,
+                RPGLore.rpg_id == rpg_id,
+                RPGLore.category == "Mundo",
+            )
+            .first()
+        )
+        if not lore:
+            raise HTTPException(
+                status_code=404,
+                detail="Região relacionada não encontrada",
+            )
+        
     event = RPGTimeline(
-        title=data.title,
-        content=data.content,
-        date_label=data.date_label,
-        rpg_id=rpg_id,
-        author_id=current_user.id,
-    )
-
+    title=data.title,
+    content=data.content,
+    date_label=data.date_label,
+    lore_id=data.lore_id,
+    rpg_id=rpg_id,
+    author_id=current_user.id,
+)
     db.add(event)
     db.commit()
     db.refresh(event)
@@ -129,9 +145,26 @@ def update_event(
             detail="Sem permissão",
         )
 
+    if data.lore_id:
+        lore = (
+            db.query(RPGLore)
+            .filter(
+                RPGLore.id == data.lore_id,
+                RPGLore.rpg_id == event.rpg_id,
+                RPGLore.category == "Mundo",
+            )
+            .first()
+        )
+
+        if not lore:
+            raise HTTPException(
+                status_code=404,
+                detail="Região relacionada não encontrada",
+            )
     event.title = data.title
     event.content = data.content
     event.date_label = data.date_label
+    event.lore_id = data.lore_id
 
     db.commit()
     db.refresh(event)

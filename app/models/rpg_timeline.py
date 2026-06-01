@@ -35,6 +35,12 @@ class RPGTimeline(Base):
         nullable=True,
     )
 
+    lore_id = Column(
+    Integer,
+    ForeignKey("rpg_lore.id"),
+    nullable=True,
+    )
+
     rpg_id = Column(
         Integer,
         ForeignKey("rpgs.id"),
@@ -47,6 +53,7 @@ class RPGTimeline(Base):
         nullable=False,
     )
 
-
+    
     rpg = relationship("RPG")
     author = relationship("User")
+    lore = relationship("RPGLore")
