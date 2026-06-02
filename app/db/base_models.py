@@ -23,3 +23,4 @@ from app.models.rpg_tag import rpg_tags
 from app.models.rpg_lore import RPGLore, RPGLoreCategory
 from app.models.map_region import MapRegion
 from app.models.rpg_timeline import RPGTimeline
+from app.models.rpg_lore_relation import RPGLoreRelation
