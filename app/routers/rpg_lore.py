@@ -101,6 +101,29 @@ def create_lore(
     db.commit()
     db.refresh(lore)
 
+    if lore.category == "Mundo" and lore.is_approved:
+        existing_region = (
+            db.query(MapRegion)
+            .filter(
+                MapRegion.rpg_id == rpg_id,
+                MapRegion.lore_id == lore.id,
+            )
+            .first()
+        )
+
+        if not existing_region:
+            region = MapRegion(
+                name=lore.title,
+                lore_id=lore.id,
+                rpg_id=rpg_id,
+                pos_x=50,
+                pos_y=50,
+                color="#e0a96d",
+            )
+
+            db.add(region)
+            db.commit()
+
     return lore
 
 
@@ -220,7 +243,73 @@ def approve_lore(
     return {
         "message": "Lore aprovada com sucesso"
     }
+@router.post("/{rpg_id}/sync-map-regions")
+def sync_map_regions(
+    rpg_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    rpg = (
+        db.query(RPG)
+        .filter(RPG.id == rpg_id)
+        .first()
+    )
 
+    if not rpg:
+        raise HTTPException(
+            status_code=404,
+            detail="RPG não encontrado"
+        )
+
+    if rpg.owner_id != current_user.id:
+        raise HTTPException(
+            status_code=403,
+            detail="Apenas o dono pode sincronizar regiões"
+        )
+
+    world_lore = (
+        db.query(RPGLore)
+        .filter(
+            RPGLore.rpg_id == rpg_id,
+            RPGLore.category == "Mundo",
+            RPGLore.is_approved == True,
+        )
+        .all()
+    )
+
+    created_count = 0
+
+    for index, lore in enumerate(world_lore):
+        existing_region = (
+            db.query(MapRegion)
+            .filter(
+                MapRegion.rpg_id == rpg_id,
+                MapRegion.lore_id == lore.id,
+            )
+            .first()
+        )
+
+        if existing_region:
+            continue
+
+        region = MapRegion(
+            name=lore.title,
+            lore_id=lore.id,
+            rpg_id=rpg_id,
+            pos_x=20 + ((index * 13) % 60),
+            pos_y=20 + ((index * 17) % 60),
+            color="#e0a96d",
+        )
+
+        db.add(region)
+        created_count += 1
+
+    db.commit()
+
+    return {
+        "message": "Regiões sincronizadas",
+        "created": created_count,
+    }
 
 # ======================================
 # 📂 CATEGORY SCHEMA
