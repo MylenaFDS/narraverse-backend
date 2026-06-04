@@ -19,7 +19,7 @@ from app.schemas.rpg_timeline import (
     RPGTimelineUpdate,
     RPGTimelineResponse,
 )
-
+from app.models.rpg_turn import RPGTurn
 
 router = APIRouter(
     prefix="/timeline",
@@ -90,6 +90,22 @@ def create_event(
                 detail="Região relacionada não encontrada",
             )
         
+    if data.turn_id:
+        turn = (
+        db.query(RPGTurn)
+        .filter(
+            RPGTurn.id == data.turn_id,
+            RPGTurn.rpg_id == rpg_id,
+        )
+        .first()
+    )
+
+    if not turn:
+        raise HTTPException(
+            status_code=404,
+            detail="Turno não encontrado",
+        )
+    
     event = RPGTimeline(
     title=data.title,
     content=data.content,
