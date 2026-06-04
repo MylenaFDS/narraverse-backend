@@ -6,6 +6,7 @@ class RPGTimelineCreate(BaseModel):
     content: str | None = None
     date_label: str | None = None
     lore_id: int | None = None
+    turn_id: int | None = None
 
 
 class RPGTimelineUpdate(BaseModel):
@@ -13,12 +14,12 @@ class RPGTimelineUpdate(BaseModel):
     content: str | None = None
     date_label: str | None = None
     lore_id: int | None = None
-
+    turn_id: int | None = None
 
 class TimelineLoreResponse(BaseModel):
     id: int
     title: str
-
+   
     class Config:
         from_attributes = True
 
@@ -28,7 +29,7 @@ class RPGTimelineResponse(BaseModel):
     title: str
     content: str | None
     date_label: str | None
-
+    turn_id: int | None = None
     lore_id: int | None = None
     lore: TimelineLoreResponse | None = None
 

@@ -95,6 +95,7 @@ def create_event(
     content=data.content,
     date_label=data.date_label,
     lore_id=data.lore_id,
+    turn_id=data.turn_id,
     rpg_id=rpg_id,
     author_id=current_user.id,
 )
@@ -165,6 +166,7 @@ def update_event(
     event.content = data.content
     event.date_label = data.date_label
     event.lore_id = data.lore_id
+    event.turn_id = data.turn_id
 
     db.commit()
     db.refresh(event)
