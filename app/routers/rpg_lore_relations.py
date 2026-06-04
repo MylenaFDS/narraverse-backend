@@ -94,15 +94,33 @@ def create_relation(
         return existing
 
     relation = RPGLoreRelation(
-        source_lore_id=source_lore.id,
-        target_lore_id=target_lore.id,
+    source_lore_id=source_lore.id,
+    target_lore_id=target_lore.id,
     )
 
     db.add(relation)
-    db.commit()
-    db.refresh(relation)
 
-    return relation
+    reverse_existing = (
+        db.query(RPGLoreRelation)
+        .filter(
+            RPGLoreRelation.source_lore_id == target_lore.id,
+            RPGLoreRelation.target_lore_id == source_lore.id,
+        )
+        .first()
+    )
+
+    if not reverse_existing:
+        reverse_relation = RPGLoreRelation(
+            source_lore_id=target_lore.id,
+            target_lore_id=source_lore.id,
+        )
+
+        db.add(reverse_relation)
+
+        db.commit()
+        db.refresh(relation)
+
+        return relation
 
 @router.get(
     "/{lore_id}",
@@ -154,6 +172,19 @@ def delete_relation(
             status_code=404,
             detail="Relação não encontrada",
         )
+    reverse_relation = (
+    db.query(RPGLoreRelation)
+    .filter(
+        RPGLoreRelation.source_lore_id
+        == relation.target_lore_id,
+        RPGLoreRelation.target_lore_id
+        == relation.source_lore_id,
+    )
+    .first()
+)
+
+    if reverse_relation:
+        db.delete(reverse_relation)
 
     db.delete(relation)
     db.commit()
