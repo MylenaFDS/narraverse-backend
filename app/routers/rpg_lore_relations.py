@@ -134,3 +134,30 @@ def get_relations(
         )
         .all()
     )
+
+@router.delete("/{relation_id}")
+def delete_relation(
+    relation_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    relation = (
+        db.query(RPGLoreRelation)
+        .filter(
+            RPGLoreRelation.id == relation_id
+        )
+        .first()
+    )
+
+    if not relation:
+        raise HTTPException(
+            status_code=404,
+            detail="Relação não encontrada",
+        )
+
+    db.delete(relation)
+    db.commit()
+
+    return {
+        "message": "Relação removida"
+    }
