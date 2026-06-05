@@ -19,6 +19,9 @@ from fastapi.staticfiles import StaticFiles
 from app.routers import rpg_notes
 from app.routers import rpg_timeline
 from app.routers import rpg_lore_relations
+from app.routers import (
+    rpg_timeline_categories,
+)
 
 # ✅ WEBSOCKETS
 from app.websockets.rpg_ws import router as ws_router
@@ -59,10 +62,11 @@ app.include_router(map_regions.router)
 app.include_router(rpg_notes.router)
 app.include_router(rpg_timeline.router)
 app.include_router(rpg_lore_relations.router)
+app.include_router(rpg_timeline_categories.router)
+
 # 🔥 WS
 app.include_router(ws_router)
 app.include_router(ws_notifications_router)
-
 
 @app.get("/")
 def root():

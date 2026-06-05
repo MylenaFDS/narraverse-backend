@@ -9,6 +9,9 @@ from sqlalchemy import (
 from sqlalchemy.orm import relationship
 
 from app.db.base import Base
+from app.models.rpg_timeline_category import (
+    RPGTimelineCategory,
+)
 
 
 class RPGTimeline(Base):
@@ -47,6 +50,14 @@ class RPGTimeline(Base):
     nullable=True,
     )
 
+    category_id = Column(
+    Integer,
+    ForeignKey(
+        "rpg_timeline_categories.id"
+    ),
+    nullable=True,
+    )
+
     rpg_id = Column(
         Integer,
         ForeignKey("rpgs.id"),
@@ -64,3 +75,4 @@ class RPGTimeline(Base):
     author = relationship("User")
     lore = relationship("RPGLore")
     turn = relationship("RPGTurn")
+    category = relationship("RPGTimelineCategory")

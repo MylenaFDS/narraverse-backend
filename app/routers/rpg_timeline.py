@@ -13,6 +13,9 @@ from app.models.user import User
 from app.models.rpg import RPG
 from app.models.rpg_timeline import RPGTimeline
 from app.models.rpg_lore import RPGLore
+from app.models.rpg_timeline_category import (
+    RPGTimelineCategory,
+)
 
 from app.schemas.rpg_timeline import (
     RPGTimelineCreate,
@@ -74,6 +77,7 @@ def create_event(
             status_code=403,
             detail="Apenas o mestre pode criar eventos",
         )
+
     if data.lore_id:
         lore = (
             db.query(RPGLore)
@@ -84,43 +88,61 @@ def create_event(
             )
             .first()
         )
+
         if not lore:
             raise HTTPException(
                 status_code=404,
                 detail="Região relacionada não encontrada",
             )
-        
+
+    if data.category_id:
+        category = (
+            db.query(RPGTimelineCategory)
+            .filter(
+                RPGTimelineCategory.id == data.category_id,
+                RPGTimelineCategory.rpg_id == rpg_id,
+            )
+            .first()
+        )
+
+        if not category:
+            raise HTTPException(
+                status_code=404,
+                detail="Categoria não encontrada",
+            )
+
     if data.turn_id:
         turn = (
-        db.query(RPGTurn)
-        .filter(
-            RPGTurn.id == data.turn_id,
-            RPGTurn.rpg_id == rpg_id,
+            db.query(RPGTurn)
+            .filter(
+                RPGTurn.id == data.turn_id,
+                RPGTurn.rpg_id == rpg_id,
+            )
+            .first()
         )
-        .first()
+
+        if not turn:
+            raise HTTPException(
+                status_code=404,
+                detail="Turno não encontrado",
+            )
+
+    event = RPGTimeline(
+        title=data.title,
+        content=data.content,
+        date_label=data.date_label,
+        lore_id=data.lore_id,
+        turn_id=data.turn_id,
+        category_id=data.category_id,
+        rpg_id=rpg_id,
+        author_id=current_user.id,
     )
 
-    if not turn:
-        raise HTTPException(
-            status_code=404,
-            detail="Turno não encontrado",
-        )
-    
-    event = RPGTimeline(
-    title=data.title,
-    content=data.content,
-    date_label=data.date_label,
-    lore_id=data.lore_id,
-    turn_id=data.turn_id,
-    rpg_id=rpg_id,
-    author_id=current_user.id,
-)
     db.add(event)
     db.commit()
     db.refresh(event)
 
     return event
-
 @router.put(
     "/{event_id}",
     response_model=RPGTimelineResponse,
@@ -178,11 +200,31 @@ def update_event(
                 status_code=404,
                 detail="Região relacionada não encontrada",
             )
+        if data.category_id:
+            category = (
+        db.query(
+            RPGTimelineCategory
+        )
+        .filter(
+            RPGTimelineCategory.id
+            == data.category_id,
+            RPGTimelineCategory.rpg_id
+            == event.rpg_id,
+        )
+        .first()
+    )
+
+    if not category:
+        raise HTTPException(
+            status_code=404,
+            detail="Categoria não encontrada",
+        )
     event.title = data.title
     event.content = data.content
     event.date_label = data.date_label
     event.lore_id = data.lore_id
     event.turn_id = data.turn_id
+    event.category_id = data.category_id
 
     db.commit()
     db.refresh(event)

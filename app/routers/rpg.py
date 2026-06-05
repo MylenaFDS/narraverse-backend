@@ -709,6 +709,16 @@ def upload_rpg_banner(
     db.commit()
     db.refresh(rpg)
 
+    default_categories = [
+    "Narrativa",
+    "Política",
+    "Guerra",
+    "Descoberta",
+    "Catástrofe",
+    "Religião",
+    "Economia",
+]
+
     return rpg
 
 @router.delete("/{rpg_id}")
