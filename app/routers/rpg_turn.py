@@ -9,6 +9,7 @@ from app.schemas.rpg_turn import RPGTurnCreate, RPGTurnResponse
 from app.core.security import get_current_user
 from app.services.notification_service import create_notification
 from app.websockets.manager import manager
+from app.models.rpg_timeline import RPGTimeline
 
 router = APIRouter(prefix="/rpg-turns", tags=["RPG Turns"])
 
@@ -286,6 +287,18 @@ def delete_turn(
 
     if turn.user_id != current_user.id:
         raise HTTPException(403, "Sem permissão")
+    
+    (
+    db.query(RPGTimeline)
+    .filter(
+        RPGTimeline.turn_id == turn.id
+    )
+    .update(
+        {
+            RPGTimeline.turn_id: None
+        }
+    )
+)
 
     db.delete(turn)
     db.commit()
