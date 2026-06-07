@@ -11,6 +11,9 @@ from app.models.character import Character
 from app.schemas.rpg import RPGCreate, RPGResponse, RPGInvite
 from app.models.user import User
 from app.core.security import get_current_user
+from app.models.rpg_timeline_category import (
+    RPGTimelineCategory,
+)
 import shutil
 import os
 from app.websockets.manager import manager
@@ -36,6 +39,28 @@ def create_rpg(
     db.add(new_rpg)
     db.commit()
     db.refresh(new_rpg)
+
+    default_categories = [
+    "Narrativa",
+    "Profecia",
+    "Guerra",
+    "Política",
+    "Catástrofe",
+    "Descoberta",
+    "Religião",
+    "Economia",
+    "Romance",
+]
+
+    for name in default_categories:
+        category = RPGTimelineCategory(
+            name=name,
+            rpg_id=new_rpg.id,
+        )
+
+        db.add(category)
+
+    db.commit()
 
     # 🔥 2️⃣ Adicionar TAGS
     if rpg_data.tags:
@@ -709,16 +734,7 @@ def upload_rpg_banner(
     db.commit()
     db.refresh(rpg)
 
-    default_categories = [
-    "Narrativa",
-    "Política",
-    "Guerra",
-    "Descoberta",
-    "Catástrofe",
-    "Religião",
-    "Economia",
-]
-
+   
     return rpg
 
 @router.delete("/{rpg_id}")

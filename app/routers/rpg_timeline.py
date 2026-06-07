@@ -200,25 +200,25 @@ def update_event(
                 status_code=404,
                 detail="Região relacionada não encontrada",
             )
-        if data.category_id:
-            category = (
-        db.query(
-            RPGTimelineCategory
+    if data.category_id:
+        category = (
+            db.query(
+                RPGTimelineCategory
+            )
+            .filter(
+                RPGTimelineCategory.id
+                == data.category_id,
+                RPGTimelineCategory.rpg_id
+                == event.rpg_id,
+            )
+            .first()
         )
-        .filter(
-            RPGTimelineCategory.id
-            == data.category_id,
-            RPGTimelineCategory.rpg_id
-            == event.rpg_id,
-        )
-        .first()
-    )
 
-    if not category:
-        raise HTTPException(
-            status_code=404,
-            detail="Categoria não encontrada",
-        )
+        if not category:
+            raise HTTPException(
+                status_code=404,
+                detail="Categoria não encontrada",
+            )
     event.title = data.title
     event.content = data.content
     event.date_label = data.date_label
