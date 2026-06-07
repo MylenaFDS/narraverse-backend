@@ -94,8 +94,8 @@ def create_relation(
         return existing
 
     relation = RPGLoreRelation(
-    source_lore_id=source_lore.id,
-    target_lore_id=target_lore.id,
+        source_lore_id=source_lore.id,
+        target_lore_id=target_lore.id,
     )
 
     db.add(relation)
@@ -117,11 +117,10 @@ def create_relation(
 
         db.add(reverse_relation)
 
-        db.commit()
-        db.refresh(relation)
+    db.commit()
+    db.refresh(relation)
 
-        return relation
-
+    return relation
 @router.get(
     "/{lore_id}",
     response_model=list[LoreRelationDetailResponse],
