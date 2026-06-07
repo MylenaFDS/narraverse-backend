@@ -11,6 +11,8 @@ from app.services.character_service import create_character, list_characters
 from app.models.character_sheet_value import CharacterSheetValue
 from app.models.rpg_sheet_field import RPGSheetField
 from app.models.rpg_turn import RPGTurn
+from app.models.character import Character
+from app.models.rpg_lore import RPGLore
 from typing import Optional
 import os
 import shutil
@@ -268,3 +270,40 @@ def delete_character(
     return {
         "message": "Personagem excluído com sucesso"
     }
+
+@router.get("/lore/{lore_id}")
+def get_characters_by_lore(
+    lore_id: int,
+    db: Session = Depends(get_db),
+):
+    lore = (
+        db.query(RPGLore)
+        .filter(
+            RPGLore.id == lore_id
+        )
+        .first()
+    )
+
+    if not lore:
+        raise HTTPException(
+            status_code=404,
+            detail="Lore não encontrada",
+        )
+
+    characters = (
+        db.query(Character)
+        .filter(
+            Character.world_lore_id == lore_id
+        )
+        .all()
+    )
+
+    return [
+        {
+            "id": character.id,
+            "name": character.name,
+            "image_url": character.image_url,
+            "world_lore_id": character.world_lore_id,
+        }
+        for character in characters
+    ]
