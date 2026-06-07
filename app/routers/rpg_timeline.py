@@ -274,3 +274,36 @@ def delete_event(
     return {
         "message": "Evento removido"
     }
+
+@router.get(
+    "/lore/{lore_id}",
+    response_model=list[RPGTimelineResponse],
+)
+def get_timeline_by_lore(
+    lore_id: int,
+    db: Session = Depends(get_db),
+):
+    lore = (
+        db.query(RPGLore)
+        .filter(
+            RPGLore.id == lore_id
+        )
+        .first()
+    )
+
+    if not lore:
+        raise HTTPException(
+            status_code=404,
+            detail="Lore não encontrada",
+        )
+
+    return (
+        db.query(RPGTimeline)
+        .filter(
+            RPGTimeline.lore_id == lore_id
+        )
+        .order_by(
+            RPGTimeline.id.asc()
+        )
+        .all()
+    )
