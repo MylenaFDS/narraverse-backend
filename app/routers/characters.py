@@ -299,11 +299,12 @@ def get_characters_by_lore(
     )
 
     return [
-        {
-            "id": character.id,
-            "name": character.name,
-            "image_url": character.image_url,
-            "world_lore_id": character.world_lore_id,
-        }
-        for character in characters
-    ]
+    {
+        "id": character.id,
+        "name": character.name,
+        "history": character.history,
+        "image_url": character.image_url,
+        "world_lore_id": character.world_lore_id,
+    }
+    for character in characters
+]
