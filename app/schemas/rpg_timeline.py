@@ -1,4 +1,5 @@
 from pydantic import BaseModel
+
 from app.schemas.rpg_timeline_category import (
     TimelineCategoryResponse,
 )
@@ -8,23 +9,38 @@ class RPGTimelineCreate(BaseModel):
     title: str
     content: str | None = None
     date_label: str | None = None
+
     lore_id: int | None = None
     turn_id: int | None = None
     category_id: int | None = None
+
+    character_ids: list[int] = []
 
 
 class RPGTimelineUpdate(BaseModel):
     title: str
     content: str | None = None
     date_label: str | None = None
+
     lore_id: int | None = None
     turn_id: int | None = None
     category_id: int | None = None
 
+    character_ids: list[int] = []
+
+
 class TimelineLoreResponse(BaseModel):
     id: int
     title: str
-   
+
+    class Config:
+        from_attributes = True
+
+
+class TimelineCharacterResponse(BaseModel):
+    id: int
+    name: str
+
     class Config:
         from_attributes = True
 
@@ -33,12 +49,20 @@ class RPGTimelineResponse(BaseModel):
     id: int
     title: str
     content: str | None
+
     date_label: str | None
+
     turn_id: int | None = None
+
     category_id: int | None = None
     category: TimelineCategoryResponse | None = None
+
     lore_id: int | None = None
     lore: TimelineLoreResponse | None = None
+
+    characters: list[
+        TimelineCharacterResponse
+    ] = []
 
     rpg_id: int
     author_id: int

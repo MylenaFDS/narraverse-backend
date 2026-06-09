@@ -4,13 +4,29 @@ from sqlalchemy import (
     String,
     Text,
     ForeignKey,
+    Table,
 )
 
 from sqlalchemy.orm import relationship
 
 from app.db.base import Base
-from app.models.rpg_timeline_category import (
-    RPGTimelineCategory,
+
+
+timeline_characters = Table(
+    "rpg_timeline_characters",
+    Base.metadata,
+    Column(
+        "timeline_id",
+        Integer,
+        ForeignKey("rpg_timeline.id"),
+        primary_key=True,
+    ),
+    Column(
+        "character_id",
+        Integer,
+        ForeignKey("characters.id"),
+        primary_key=True,
+    ),
 )
 
 
@@ -39,23 +55,23 @@ class RPGTimeline(Base):
     )
 
     lore_id = Column(
-    Integer,
-    ForeignKey("rpg_lore.id"),
-    nullable=True,
+        Integer,
+        ForeignKey("rpg_lore.id"),
+        nullable=True,
     )
 
     turn_id = Column(
-    Integer,
-    ForeignKey("rpg_turns.id"),
-    nullable=True,
+        Integer,
+        ForeignKey("rpg_turns.id"),
+        nullable=True,
     )
 
     category_id = Column(
-    Integer,
-    ForeignKey(
-        "rpg_timeline_categories.id"
-    ),
-    nullable=True,
+        Integer,
+        ForeignKey(
+            "rpg_timeline_categories.id"
+        ),
+        nullable=True,
     )
 
     rpg_id = Column(
@@ -70,9 +86,15 @@ class RPGTimeline(Base):
         nullable=False,
     )
 
-    
     rpg = relationship("RPG")
     author = relationship("User")
     lore = relationship("RPGLore")
     turn = relationship("RPGTurn")
-    category = relationship("RPGTimelineCategory")
+    category = relationship(
+        "RPGTimelineCategory"
+    )
+
+    characters = relationship(
+        "Character",
+        secondary=timeline_characters,
+    )
