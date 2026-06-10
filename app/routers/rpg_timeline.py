@@ -16,13 +16,15 @@ from app.models.rpg_lore import RPGLore
 from app.models.rpg_timeline_category import (
     RPGTimelineCategory,
 )
+from app.models.rpg_turn import RPGTurn
+from app.models.character import Character
 
 from app.schemas.rpg_timeline import (
     RPGTimelineCreate,
     RPGTimelineUpdate,
     RPGTimelineResponse,
 )
-from app.models.rpg_turn import RPGTurn
+
 
 router = APIRouter(
     prefix="/timeline",
@@ -48,6 +50,34 @@ def get_timeline(
         )
         .all()
     )
+
+
+def get_valid_characters(
+    db: Session,
+    rpg_id: int,
+    character_ids: list[int],
+):
+    if not character_ids:
+        return []
+
+    characters = (
+        db.query(Character)
+        .filter(
+            Character.id.in_(
+                character_ids
+            ),
+            Character.rpg_id == rpg_id,
+        )
+        .all()
+    )
+
+    if len(characters) != len(character_ids):
+        raise HTTPException(
+            status_code=404,
+            detail="Um ou mais personagens não foram encontrados",
+        )
+
+    return characters
 
 
 @router.post(
@@ -127,6 +157,12 @@ def create_event(
                 detail="Turno não encontrado",
             )
 
+    characters = get_valid_characters(
+        db=db,
+        rpg_id=rpg_id,
+        character_ids=data.character_ids,
+    )
+
     event = RPGTimeline(
         title=data.title,
         content=data.content,
@@ -138,11 +174,15 @@ def create_event(
         author_id=current_user.id,
     )
 
+    event.characters = characters
+
     db.add(event)
     db.commit()
     db.refresh(event)
 
     return event
+
+
 @router.put(
     "/{event_id}",
     response_model=RPGTimelineResponse,
@@ -200,6 +240,7 @@ def update_event(
                 status_code=404,
                 detail="Região relacionada não encontrada",
             )
+
     if data.category_id:
         category = (
             db.query(
@@ -219,17 +260,46 @@ def update_event(
                 status_code=404,
                 detail="Categoria não encontrada",
             )
+
+    if data.turn_id:
+        turn = (
+            db.query(RPGTurn)
+            .filter(
+                RPGTurn.id == data.turn_id,
+                RPGTurn.rpg_id == event.rpg_id,
+            )
+            .first()
+        )
+
+        if not turn:
+            raise HTTPException(
+                status_code=404,
+                detail="Turno não encontrado",
+            )
+
+    characters = None
+
+    if data.character_ids is not None:
+        characters = get_valid_characters(
+            db=db,
+            rpg_id=event.rpg_id,
+            character_ids=data.character_ids,
+        )
+
     event.title = data.title
     event.content = data.content
     event.date_label = data.date_label
     event.lore_id = data.lore_id
     event.turn_id = data.turn_id
     event.category_id = data.category_id
+    if characters is not None:
+        event.characters = characters
 
     db.commit()
     db.refresh(event)
 
     return event
+
 
 @router.delete("/{event_id}")
 def delete_event(
@@ -274,6 +344,7 @@ def delete_event(
     return {
         "message": "Evento removido"
     }
+
 
 @router.get(
     "/lore/{lore_id}",

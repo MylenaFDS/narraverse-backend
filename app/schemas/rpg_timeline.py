@@ -26,7 +26,7 @@ class RPGTimelineUpdate(BaseModel):
     turn_id: int | None = None
     category_id: int | None = None
 
-    character_ids: list[int] = []
+    character_ids: list[int] | None = None
 
 
 class TimelineLoreResponse(BaseModel):
