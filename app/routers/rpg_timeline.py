@@ -378,3 +378,38 @@ def get_timeline_by_lore(
         )
         .all()
     )
+
+@router.get(
+    "/character/{character_id}",
+    response_model=list[RPGTimelineResponse],
+)
+def get_timeline_by_character(
+    character_id: int,
+    db: Session = Depends(get_db),
+):
+    character = (
+        db.query(Character)
+        .filter(
+            Character.id == character_id
+        )
+        .first()
+    )
+
+    if not character:
+        raise HTTPException(
+            status_code=404,
+            detail="Personagem não encontrado",
+        )
+
+    return (
+        db.query(RPGTimeline)
+        .filter(
+            RPGTimeline.characters.any(
+                Character.id == character_id
+            )
+        )
+        .order_by(
+            RPGTimeline.id.asc()
+        )
+        .all()
+    )
