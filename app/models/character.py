@@ -19,6 +19,12 @@ class Character(Base):
         nullable=True
     )
 
+    faction_id = Column(
+    Integer,
+    ForeignKey("rpg_factions.id"),
+    nullable=True,
+    )
+
     image_url = Column(String, nullable=True)
     
     # ⚠️ mantém por compatibilidade (pode remover depois com migração)
@@ -33,6 +39,7 @@ class Character(Base):
     # 🔥 NOVO
     sheet_values = relationship("CharacterSheetValue", back_populates="character")
     world_lore = relationship("RPGLore")
+    faction = relationship("RPGFaction")
 
     __table_args__ = (
         Index("idx_character_rpg_user", "rpg_id", "user_id"),

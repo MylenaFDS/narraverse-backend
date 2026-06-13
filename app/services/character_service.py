@@ -6,13 +6,14 @@ from app.models.character_sheet_value import CharacterSheetValue
 
 def create_character(db: Session, user_id: int, rpg_id: int, data):
     character = Character(
-        name=data.name,
-        description=data.description,
-        history=data.history,
-        world_lore_id=data.world_lore_id,
-        image_url=data.image_url,
-        user_id=user_id,
-        rpg_id=rpg_id,
+    name=data.name,
+    description=data.description,
+    history=data.history,
+    world_lore_id=data.world_lore_id,
+    faction_id=data.faction_id,
+    image_url=data.image_url,
+    user_id=user_id,
+    rpg_id=rpg_id,
     )
 
     db.add(character)

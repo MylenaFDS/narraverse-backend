@@ -70,23 +70,32 @@ def get_public_character(
     )
 
     return {
-        "id": character.id,
-        "name": character.name,
-        "history": character.history,
-        "image_url": character.image_url,
-        "world_lore_id": character.world_lore_id,
-        "owner_id": character.user_id,
-        "owner_username": character.owner.username,
-        "sheet": [
-            {
-                "field_id": field.id,
-                "field_name": field.name,
-                "field_type": field.field_type,
-                "value": value.value,
-            }
-            for value, field in sheet_values
-        ],
-    }
+    "id": character.id,
+    "name": character.name,
+    "history": character.history,
+    "image_url": character.image_url,
+    "world_lore_id": character.world_lore_id,
+    "world_lore": {
+        "id": character.world_lore.id,
+        "title": character.world_lore.title,
+    } if character.world_lore else None,
+    "faction_id": character.faction_id,
+    "faction": {
+        "id": character.faction.id,
+        "name": character.faction.name,
+    } if character.faction else None,
+    "owner_id": character.user_id,
+    "owner_username": character.owner.username,
+    "sheet": [
+        {
+            "field_id": field.id,
+            "field_name": field.name,
+            "field_type": field.field_type,
+            "value": value.value,
+        }
+        for value, field in sheet_values
+    ],
+}
 
 @router.post("/{rpg_id}", response_model=CharacterResponse)
 def create_character_route(
@@ -131,6 +140,7 @@ def update_character_route(
     name: str = Form(...),
     history: str = Form(...),
     world_lore_id: Optional[int] = Form(None),
+    faction_id: Optional[int] = Form(None),
     image: Optional[UploadFile] = File(None),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
@@ -156,7 +166,7 @@ def update_character_route(
     character.name = name
     character.history = history
     character.world_lore_id = world_lore_id
-
+    character.faction_id = faction_id
     if image:
         upload_dir = "uploads/characters"
         os.makedirs(upload_dir, exist_ok=True)
@@ -305,6 +315,11 @@ def get_characters_by_lore(
         "history": character.history,
         "image_url": character.image_url,
         "world_lore_id": character.world_lore_id,
+        "faction_id": character.faction_id,
+        "faction": {
+            "id": character.faction.id,
+            "name": character.faction.name,
+        } if character.faction else None,
     }
     for character in characters
 ]
