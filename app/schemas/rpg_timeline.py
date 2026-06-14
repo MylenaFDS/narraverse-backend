@@ -15,6 +15,7 @@ class RPGTimelineCreate(BaseModel):
     category_id: int | None = None
 
     character_ids: list[int] = []
+    faction_ids: list[int] = []
 
 
 class RPGTimelineUpdate(BaseModel):
@@ -27,6 +28,7 @@ class RPGTimelineUpdate(BaseModel):
     category_id: int | None = None
 
     character_ids: list[int] | None = None
+    faction_ids: list[int] | None = None
 
 
 class TimelineLoreResponse(BaseModel):
@@ -44,6 +46,12 @@ class TimelineCharacterResponse(BaseModel):
     class Config:
         from_attributes = True
 
+class TimelineFactionResponse(BaseModel):
+    id: int
+    name: str
+
+    class Config:
+        from_attributes = True
 
 class RPGTimelineResponse(BaseModel):
     id: int
@@ -62,6 +70,10 @@ class RPGTimelineResponse(BaseModel):
 
     characters: list[
         TimelineCharacterResponse
+    ] = []
+    
+    factions: list[
+    TimelineFactionResponse
     ] = []
 
     rpg_id: int

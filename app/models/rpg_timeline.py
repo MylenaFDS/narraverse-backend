@@ -29,6 +29,22 @@ timeline_characters = Table(
     ),
 )
 
+timeline_factions = Table(
+    "rpg_timeline_factions",
+    Base.metadata,
+    Column(
+        "timeline_id",
+        Integer,
+        ForeignKey("rpg_timeline.id"),
+        primary_key=True,
+    ),
+    Column(
+        "faction_id",
+        Integer,
+        ForeignKey("rpg_factions.id"),
+        primary_key=True,
+    ),
+)
 
 class RPGTimeline(Base):
     __tablename__ = "rpg_timeline"
@@ -97,4 +113,9 @@ class RPGTimeline(Base):
     characters = relationship(
         "Character",
         secondary=timeline_characters,
+    )
+
+    factions = relationship(
+    "RPGFaction",
+    secondary=timeline_factions,
     )
