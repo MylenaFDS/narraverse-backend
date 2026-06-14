@@ -12,7 +12,7 @@ from app.core.security import get_current_user
 from app.models.user import User
 from app.models.rpg import RPG
 from app.models.rpg_faction import RPGFaction
-
+from app.models.character import Character
 from app.schemas.rpg_faction import (
     RPGFactionCreate,
     RPGFactionUpdate,
@@ -45,6 +45,56 @@ def get_factions(
         .all()
     )
 
+@router.get("/{faction_id}")
+def get_faction_detail(
+    faction_id: int,
+    db: Session = Depends(get_db),
+):
+    faction = (
+        db.query(RPGFaction)
+        .filter(
+            RPGFaction.id == faction_id
+        )
+        .first()
+    )
+
+    if not faction:
+        raise HTTPException(
+            status_code=404,
+            detail="Facção não encontrada",
+        )
+
+    members = (
+        db.query(Character)
+        .filter(
+            Character.faction_id == faction.id
+        )
+        .order_by(
+            Character.name.asc()
+        )
+        .all()
+    )
+
+    return {
+        "id": faction.id,
+        "name": faction.name,
+        "description": faction.description,
+        "rpg_id": faction.rpg_id,
+        "members": [
+            {
+                "id": member.id,
+                "name": member.name,
+                "history": member.history,
+                "image_url": member.image_url,
+                "world_lore_id": member.world_lore_id,
+                "world_lore": {
+                    "id": member.world_lore.id,
+                    "title": member.world_lore.title,
+                } if member.world_lore else None,
+            }
+            for member in members
+        ],
+    }
 
 @router.post(
     "/rpg/{rpg_id}",
