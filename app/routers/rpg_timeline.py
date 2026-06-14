@@ -18,6 +18,7 @@ from app.models.rpg_timeline_category import (
 )
 from app.models.rpg_turn import RPGTurn
 from app.models.character import Character
+from app.models.rpg_faction import RPGFaction
 
 from app.schemas.rpg_timeline import (
     RPGTimelineCreate,
@@ -79,6 +80,32 @@ def get_valid_characters(
 
     return characters
 
+def get_valid_factions(
+    db: Session,
+    rpg_id: int,
+    faction_ids: list[int],
+):
+    if not faction_ids:
+        return []
+
+    factions = (
+        db.query(RPGFaction)
+        .filter(
+            RPGFaction.id.in_(
+                faction_ids
+            ),
+            RPGFaction.rpg_id == rpg_id,
+        )
+        .all()
+    )
+
+    if len(factions) != len(faction_ids):
+        raise HTTPException(
+            status_code=404,
+            detail="Uma ou mais facções não foram encontradas",
+        )
+
+    return factions
 
 @router.post(
     "/rpg/{rpg_id}",
@@ -162,6 +189,11 @@ def create_event(
         rpg_id=rpg_id,
         character_ids=data.character_ids,
     )
+    factions = get_valid_factions(
+    db=db,
+    rpg_id=rpg_id,
+    faction_ids=data.faction_ids,
+    )
 
     event = RPGTimeline(
         title=data.title,
@@ -175,6 +207,7 @@ def create_event(
     )
 
     event.characters = characters
+    event.factions = factions
 
     db.add(event)
     db.commit()
@@ -286,6 +319,15 @@ def update_event(
             character_ids=data.character_ids,
         )
 
+    factions = None
+
+    if data.faction_ids is not None:
+        factions = get_valid_factions(
+            db=db,
+            rpg_id=event.rpg_id,
+            faction_ids=data.faction_ids,
+        )
+
     event.title = data.title
     event.content = data.content
     event.date_label = data.date_label
@@ -294,7 +336,8 @@ def update_event(
     event.category_id = data.category_id
     if characters is not None:
         event.characters = characters
-
+    if factions is not None:
+        event.factions = factions
     db.commit()
     db.refresh(event)
 
