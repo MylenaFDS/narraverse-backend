@@ -12,6 +12,7 @@ from app.core.security import get_current_user
 from app.models.user import User
 from app.models.rpg import RPG
 from app.models.rpg_faction import RPGFaction
+from app.models.rpg_timeline import RPGTimeline
 from app.models.character import Character
 from app.schemas.rpg_faction import (
     RPGFactionCreate,
@@ -75,6 +76,19 @@ def get_faction_detail(
         .all()
     )
 
+    timeline_events = (
+    db.query(RPGTimeline)
+    .filter(
+        RPGTimeline.factions.any(
+            RPGFaction.id == faction.id
+        )
+    )
+    .order_by(
+        RPGTimeline.id.asc()
+    )
+    .all()
+    )
+
     return {
         "id": faction.id,
         "name": faction.name,
@@ -94,6 +108,25 @@ def get_faction_detail(
             }
             for member in members
         ],
+
+        "timeline_events": [
+         {
+            "id": event.id,
+            "title": event.title,
+            "content": event.content,
+            "date_label": event.date_label,
+            "lore": {
+            "id": event.lore.id,
+            "title": event.lore.title,
+            } if event.lore else None,
+            "category": {
+                "id": event.category.id,
+                "name": event.category.name,
+                } if event.category else None,
+            }
+            for event in timeline_events
+],
+     
     }
 
 @router.post(
