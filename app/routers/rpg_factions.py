@@ -146,6 +146,59 @@ def get_faction_detail(
      
     }
 
+@router.get("/lore/{lore_id}")
+def get_factions_by_lore(
+    lore_id: int,
+    db: Session = Depends(get_db),
+):
+    characters = (
+        db.query(Character)
+        .filter(
+            Character.world_lore_id == lore_id,
+            Character.faction_id.isnot(None),
+        )
+        .all()
+    )
+
+    timeline_events = (
+        db.query(RPGTimeline)
+        .filter(
+            RPGTimeline.lore_id == lore_id
+        )
+        .all()
+    )
+
+    factions_by_id = {}
+
+    for character in characters:
+        if character.faction:
+            factions_by_id[
+                character.faction.id
+            ] = character.faction
+
+    for event in timeline_events:
+        for faction in event.factions:
+            factions_by_id[
+                faction.id
+            ] = faction
+
+    return [
+        {
+            "id": faction.id,
+            "name": faction.name,
+            "description": faction.description,
+            "rpg_id": faction.rpg_id,
+            "member_count": (
+                db.query(func.count(Character.id))
+                .filter(
+                    Character.faction_id == faction.id
+                )
+                .scalar()
+            ),
+        }
+        for faction in factions_by_id.values()
+    ]
+
 @router.post(
     "/rpg/{rpg_id}",
     response_model=RPGFactionResponse,
