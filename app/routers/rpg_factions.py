@@ -19,7 +19,7 @@ from app.schemas.rpg_faction import (
     RPGFactionUpdate,
     RPGFactionResponse,
 )
-
+from sqlalchemy import func
 
 router = APIRouter(
     prefix="/factions",
@@ -27,24 +27,34 @@ router = APIRouter(
 )
 
 
-@router.get(
-    "/rpg/{rpg_id}",
-    response_model=list[RPGFactionResponse],
-)
+@router.get("/rpg/{rpg_id}")
 def get_factions(
     rpg_id: int,
     db: Session = Depends(get_db),
 ):
-    return (
+    factions = (
         db.query(RPGFaction)
-        .filter(
-            RPGFaction.rpg_id == rpg_id
-        )
-        .order_by(
-            RPGFaction.name.asc()
-        )
+        .filter(RPGFaction.rpg_id == rpg_id)
+        .order_by(RPGFaction.name.asc())
         .all()
     )
+
+    return [
+        {
+            "id": faction.id,
+            "name": faction.name,
+            "description": faction.description,
+            "rpg_id": faction.rpg_id,
+            "member_count": (
+                db.query(func.count(Character.id))
+                .filter(
+                    Character.faction_id == faction.id
+                )
+                .scalar()
+            ),
+        }
+        for faction in factions
+    ]
 
 @router.get("/{faction_id}")
 def get_faction_detail(
@@ -110,21 +120,28 @@ def get_faction_detail(
         ],
 
         "timeline_events": [
-         {
-            "id": event.id,
-            "title": event.title,
-            "content": event.content,
-            "date_label": event.date_label,
-            "lore": {
+    {
+        "id": event.id,
+        "title": event.title,
+        "content": event.content,
+        "date_label": event.date_label,
+        "lore": {
             "id": event.lore.id,
             "title": event.lore.title,
-            } if event.lore else None,
-            "category": {
-                "id": event.category.id,
-                "name": event.category.name,
-                } if event.category else None,
+        } if event.lore else None,
+        "category": {
+            "id": event.category.id,
+            "name": event.category.name,
+        } if event.category else None,
+        "characters": [
+            {
+                "id": character.id,
+                "name": character.name,
             }
-            for event in timeline_events
+            for character in event.characters
+        ],
+    }
+    for event in timeline_events
 ],
      
     }
