@@ -23,6 +23,7 @@ from app.routers import (
     rpg_timeline_categories,
 )
 from app.routers import rpg_factions
+from app.routers import region_places
 
 # ✅ WEBSOCKETS
 from app.websockets.rpg_ws import router as ws_router
@@ -65,7 +66,7 @@ app.include_router(rpg_timeline.router)
 app.include_router(rpg_lore_relations.router)
 app.include_router(rpg_timeline_categories.router)
 app.include_router(rpg_factions.router)
-
+app.include_router(region_places.router)
 # 🔥 WS
 app.include_router(ws_router)
 app.include_router(ws_notifications_router)

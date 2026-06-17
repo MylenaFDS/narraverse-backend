@@ -26,3 +26,4 @@ from app.models.rpg_timeline import RPGTimeline
 from app.models.rpg_lore_relation import RPGLoreRelation
 from app.models.rpg_timeline_category import RPGTimelineCategory
 from app.models.rpg_faction import RPGFaction
+from app.models.region_place import RegionPlace
