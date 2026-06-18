@@ -11,6 +11,11 @@ class RPGLore(Base):
     title = Column(String(150), nullable=False, index=True)
     content = Column(Text, nullable=True)
 
+    visual_description = Column(
+    Text,
+    nullable=True,
+    )
+
     rpg_id = Column(Integer, ForeignKey("rpgs.id"), nullable=False)
     author_id = Column(Integer, ForeignKey("users.id"), nullable=False)
 

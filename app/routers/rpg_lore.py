@@ -55,12 +55,13 @@ def create_lore(
         lore = RPGLore(
             title=data.title,
             content=data.content,
+            visual_description=data.visual_description,
             category=data.category,
             rpg_id=rpg_id,
             author_id=current_user.id,
             is_approved=True,
             is_suggestion=False
-        )
+)
 
     else:
         # verificar participação
@@ -437,6 +438,9 @@ def update_lore(
 
     lore.title = data.title
     lore.content = data.content
+    lore.visual_description = (
+        data.visual_description
+    )
     lore.category = data.category
 
     db.commit()
