@@ -2,7 +2,12 @@ from fastapi import (
     APIRouter,
     Depends,
     HTTPException,
+    UploadFile,
+    File,
 )
+
+import os
+import shutil
 
 from sqlalchemy.orm import Session
 
@@ -18,15 +23,6 @@ from app.schemas.region_scene import (
     RegionSceneUpdate,
     RegionSceneResponse,
 )
-from fastapi import (
-    APIRouter,
-    Depends,
-    HTTPException,
-    UploadFile,
-    File,
-)
-import os
-import shutil
 
 router = APIRouter(
     prefix="/region-scenes",
@@ -68,6 +64,30 @@ def create_region_scene(
     db.add(scene)
     db.commit()
     db.refresh(scene)
+
+    return scene
+
+@router.get(
+    "/{scene_id}",
+    response_model=RegionSceneResponse,
+)
+def get_region_scene_detail(
+    scene_id: int,
+    db: Session = Depends(get_db),
+):
+    scene = (
+        db.query(RegionScene)
+        .filter(
+            RegionScene.id == scene_id
+        )
+        .first()
+    )
+
+    if not scene:
+        raise HTTPException(
+            status_code=404,
+            detail="Cena não encontrada",
+        )
 
     return scene
 

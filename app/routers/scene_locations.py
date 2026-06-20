@@ -75,3 +75,42 @@ def get_scene_locations(
         .order_by(SceneLocation.id.asc())
         .all()
     )
+@router.put(
+    "/{location_id}",
+    response_model=SceneLocationResponse,
+)
+def update_scene_location(
+    location_id: int,
+    data: SceneLocationUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(
+        get_current_user
+    ),
+):
+    location = (
+        db.query(SceneLocation)
+        .filter(
+            SceneLocation.id
+            == location_id
+        )
+        .first()
+    )
+
+    if not location:
+        raise HTTPException(
+            status_code=404,
+            detail="Local não encontrado",
+        )
+
+    location.name = data.name
+    location.description = data.description
+    location.pos_x = data.pos_x
+    location.pos_y = data.pos_y
+    location.target_scene_id = (
+        data.target_scene_id
+    )
+
+    db.commit()
+    db.refresh(location)
+
+    return location
