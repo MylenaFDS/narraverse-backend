@@ -114,3 +114,30 @@ def update_scene_location(
     db.refresh(location)
 
     return location
+
+
+@router.delete("/{location_id}")
+def delete_scene_location(
+    location_id: int,
+    db: Session = Depends(get_db),
+):
+    location = (
+        db.query(SceneLocation)
+        .filter(
+            SceneLocation.id == location_id
+        )
+        .first()
+    )
+
+    if not location:
+        raise HTTPException(
+            status_code=404,
+            detail="Local não encontrado",
+        )
+
+    db.delete(location)
+    db.commit()
+
+    return {
+        "message": "Local removido"
+    }
