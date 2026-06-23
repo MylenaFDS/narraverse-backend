@@ -1,12 +1,31 @@
+from app.services.providers.local_provider import (
+    LocalProvider,
+)
+
+
 class NarraverseAI:
+
+    def __init__(self):
+        self.provider = LocalProvider()
 
     def generate_scene(
         self,
-        context: dict,
-        instruction: str,
+        context,
+        instruction,
     ):
-        raise NotImplementedError
+        prompt = f"""
+Contexto:
 
+{context}
+
+Pedido:
+
+{instruction}
+"""
+
+        return self.provider.generate_text(
+            prompt
+        )
     def generate_npc(
         self,
         context: dict,
