@@ -1,3 +1,6 @@
+import json
+import re
+
 from app.services.providers.local_provider import (
     LocalProvider,
 )
@@ -39,26 +42,29 @@ Pedido:
         scene_description: str,
     ):
         prompt = f"""
-Você é a IA oficial do Narraverse.
+Você é um gerador JSON.
 
-RESPONDA SEMPRE EM PORTUGUÊS DO BRASIL.
+REGRAS OBRIGATÓRIAS:
 
-Sua função é criar hotspots navegáveis.
+- Responda SOMENTE JSON.
+- Não explique nada.
+- Não escreva frases antes.
+- Não escreva frases depois.
+- Não use markdown.
+- Não use ```json.
+- Não escreva "Aqui está o resultado".
+- Não escreva comentários.
 
-IMPORTANTE:
+Os hotspots devem existir DENTRO da cena.
 
-- Os hotspots devem existir DENTRO da cena.
-- Não crie locais externos.
-- Não crie cidades.
-- Não crie regiões.
-- Não crie florestas.
-- Não crie jardins.
-- Não crie construções completas.
-- Não use locais famosos de livros, filmes ou jogos.
+Não crie:
+- cidades
+- regiões
+- florestas
+- jardins
+- construções completas
 
-Os hotspots devem representar
-objetos, áreas ou pontos específicos
-que podem ser explorados.
+Crie pontos específicos exploráveis.
 
 Exemplos:
 
@@ -76,14 +82,12 @@ Biblioteca:
 - Escada móvel
 - Mesa de leitura
 
-Retorne SOMENTE JSON.
-
-Formato:
+Formato obrigatório:
 
 [
   {{
-    "name": "...",
-    "description": "..."
+    "name": "Nome",
+    "description": "Descrição"
   }}
 ]
 
@@ -96,9 +100,26 @@ Descrição:
 Crie exatamente 5 hotspots.
 """
 
-        return self.provider.generate_text(
+        response = self.provider.generate_text(
             prompt
         )
+
+        try:
+            match = re.search(
+                r"\[.*\]",
+                response,
+                re.DOTALL,
+            )
+
+            if match:
+                return json.loads(
+                    match.group(0)
+                )
+
+            return []
+
+        except Exception:
+            return []
 
     def generate_locations(
         self,
@@ -106,21 +127,21 @@ Crie exatamente 5 hotspots.
         scene_description: str,
     ):
         prompt = f"""
-Você é a IA oficial do Narraverse.
+Você é um gerador JSON.
 
-RESPONDA SOMENTE EM PORTUGUÊS.
+REGRAS OBRIGATÓRIAS:
 
-Sua função é criar novas cenas
-conectadas à cena atual.
-
-Retorne SOMENTE JSON.
+- Responda SOMENTE JSON.
+- Não explique nada.
+- Não use markdown.
+- Não escreva frases extras.
 
 Formato:
 
 [
   {{
-    "title": "...",
-    "description": "..."
+    "title": "Título",
+    "description": "Descrição"
   }}
 ]
 
@@ -132,9 +153,27 @@ Descrição:
 
 Crie exatamente 5 possíveis cenas filhas.
 """
-        return self.provider.generate_text(
+
+        response = self.provider.generate_text(
             prompt
         )
+
+        try:
+            match = re.search(
+                r"\[.*\]",
+                response,
+                re.DOTALL,
+            )
+
+            if match:
+                return json.loads(
+                    match.group(0)
+                )
+
+            return []
+
+        except Exception:
+            return []
 
     def generate_npc(
         self,
