@@ -3,6 +3,7 @@ from fastapi import APIRouter
 from app.schemas.ai import (
     GenerateSceneRequest,
     GenerateLocationsRequest,
+    GenerateHotspotsRequest,
 )
 
 from app.services.narraverse_ai import (
@@ -40,6 +41,22 @@ Descrição:
     response = ai.generate_scene(
         context=context,
         instruction=data.instruction,
+    )
+
+    return {
+        "response": response
+    }
+
+
+@router.post("/generate-hotspots")
+def generate_hotspots_ai(
+    data: GenerateHotspotsRequest,
+):
+    ai = NarraverseAI()
+
+    response = ai.generate_hotspots(
+        scene_title=data.scene_title,
+        scene_description=data.scene_description,
     )
 
     return {

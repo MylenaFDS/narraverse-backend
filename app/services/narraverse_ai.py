@@ -10,8 +10,8 @@ class NarraverseAI:
 
     def generate_scene(
         self,
-        context,
-        instruction,
+        context: str,
+        instruction: str,
     ):
         prompt = f"""
 Você é a IA oficial do Narraverse.
@@ -33,60 +33,109 @@ Pedido:
             prompt
         )
 
-    def generate_locations(
-    self,
-    scene_title: str,
-    scene_description: str,
-):
+    def generate_hotspots(
+        self,
+        scene_title: str,
+        scene_description: str,
+    ):
         prompt = f"""
-    Você é a IA oficial do Narraverse.
+Você é a IA oficial do Narraverse.
 
-    Responda SOMENTE em português.
+RESPONDA SEMPRE EM PORTUGUÊS DO BRASIL.
 
-    Sua função é criar hotspots navegáveis.
+Sua função é criar hotspots navegáveis.
 
-    IMPORTANTE:
+IMPORTANTE:
 
-    - Os locais devem existir DENTRO da cena.
-    - Não crie locais externos.
-    - Não crie cidades.
-    - Não crie regiões.
-    - Não crie florestas.
-    - Não crie jardins.
-    - Não crie locais genéricos.
-    - Não use locais famosos de livros, filmes ou jogos.
+- Os hotspots devem existir DENTRO da cena.
+- Não crie locais externos.
+- Não crie cidades.
+- Não crie regiões.
+- Não crie florestas.
+- Não crie jardins.
+- Não crie construções completas.
+- Não use locais famosos de livros, filmes ou jogos.
 
-    Cada local deve representar um ponto específico
-    que o jogador pode explorar.
+Os hotspots devem representar
+objetos, áreas ou pontos específicos
+que podem ser explorados.
 
-    Exemplo para uma cozinha:
+Exemplos:
 
-    - Despensa
-    - Forno
-    - Mesa de refeições
-    - Armário de ingredientes
-    - Adega
+Cozinha:
+- Forno
+- Despensa
+- Mesa de refeições
+- Armário de ingredientes
+- Adega
 
-    Retorne SOMENTE JSON.
+Biblioteca:
+- Estante principal
+- Escrivaninha
+- Cofre
+- Escada móvel
+- Mesa de leitura
 
-    Formato:
+Retorne SOMENTE JSON.
 
-    [
-    {{
-        "name": "...",
-        "description": "..."
-    }}
-    ]
+Formato:
 
-    Cena:
-    {scene_title}
+[
+  {{
+    "name": "...",
+    "description": "..."
+  }}
+]
 
-    Descrição:
-    {scene_description}
+Cena:
+{scene_title}
 
-    Crie exatamente 5 locais.
-    """
-        return self.provider.generate_text(prompt)
+Descrição:
+{scene_description}
+
+Crie exatamente 5 hotspots.
+"""
+
+        return self.provider.generate_text(
+            prompt
+        )
+
+    def generate_locations(
+        self,
+        scene_title: str,
+        scene_description: str,
+    ):
+        prompt = f"""
+Você é a IA oficial do Narraverse.
+
+RESPONDA SOMENTE EM PORTUGUÊS.
+
+Sua função é criar novas cenas
+conectadas à cena atual.
+
+Retorne SOMENTE JSON.
+
+Formato:
+
+[
+  {{
+    "title": "...",
+    "description": "..."
+  }}
+]
+
+Cena atual:
+{scene_title}
+
+Descrição:
+{scene_description}
+
+Crie exatamente 5 possíveis cenas filhas.
+"""
+        return self.provider.generate_text(
+            prompt
+        )
+
     def generate_npc(
         self,
         context: dict,
