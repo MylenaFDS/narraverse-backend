@@ -14,6 +14,12 @@ class NarraverseAI:
         instruction,
     ):
         prompt = f"""
+Você é a IA oficial do Narraverse.
+
+Responda SEMPRE em português do Brasil.
+
+Crie conteúdo criativo para RPG.
+
 Contexto:
 
 {context}
