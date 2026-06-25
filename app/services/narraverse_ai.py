@@ -115,8 +115,11 @@ Crie exatamente 5 hotspots.
                 return json.loads(
                     match.group(0)
                 )
+                
+            
 
             return []
+                
 
         except Exception:
             return []
