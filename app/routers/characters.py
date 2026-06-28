@@ -21,6 +21,9 @@ import os
 import shutil
 from app.services.narraverse_ai import NarraverseAI
 import json
+from app.models.rpg import RPG
+from app.models.rpg_sheet_field import RPGSheetField
+import re
 
 router = APIRouter(prefix="/characters", tags=["Characters"])
 
@@ -214,60 +217,115 @@ def generate_npc(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    rpg = (
+        db.query(RPG)
+        .filter(RPG.id == rpg_id)
+        .first()
+    )
+
+    if not rpg:
+        raise HTTPException(
+            status_code=404,
+            detail="RPG não encontrado"
+        )
+
+    sheet_fields = (
+        db.query(RPGSheetField)
+        .filter(
+            RPGSheetField.rpg_id == rpg_id
+        )
+        .order_by(
+            RPGSheetField.category,
+            RPGSheetField.id,
+        )
+        .all()
+    )
+
+    campos = "\n".join(
+        f"- {field.name} ({field.field_type})"
+        for field in sheet_fields
+    )
+
+    prompt = f"""
+    Você é um mestre de RPG especializado em fantasia.
+
+    RESPONDA SOMENTE EM PORTUGUÊS BRASILEIRO.
+
+    NUNCA escreva em inglês.
+
+    NUNCA explique o resultado.
+
+    NUNCA escreva markdown.
+
+    NUNCA escreva ```json.
+
+    Retorne SOMENTE um JSON válido.
+
+    O RPG é:
+
+    Nome:
+    {rpg.name}
+
+    Descrição:
+    {rpg.description or "Sem descrição"}
+
+    A ficha deste RPG possui os seguintes campos:
+
+    {campos}
+
+    Crie um NPC ORIGINAL que combine perfeitamente com esse universo.
+
+    Preencha TODOS os campos da ficha.
+
+    O JSON deve ser exatamente assim:
+
+    {{
+    "name": "...",
+    "history": "...",
+    "sheet": {{
+        "Nome do Campo": "...",
+        "Outro Campo": "...",
+        "Outro Campo": "..."
+    }}
+    }}
+    """
     ai = NarraverseAI()
-
-    prompt = """
-Você é um mestre de RPG.
-
-Crie um NPC interessante para um RPG.
-
-Responda SOMENTE com JSON válido.
-
-Não escreva explicações.
-Não escreva texto antes.
-Não escreva texto depois.
-Não utilize markdown.
-Não utilize ```json.
-
-Formato obrigatório:
-
-{
-  "name": "...",
-  "history": "..."
-}
-"""
 
     response = ai.provider.generate_text(prompt)
 
     print("=== RESPOSTA BRUTA ===")
     print(response)
 
-    import re
+    # Remove markdown caso exista
+    response = re.sub(
+        r"```json|```",
+        "",
+        response,
+        flags=re.IGNORECASE,
+    ).strip()
 
-    match = re.search(
-        r"\{[\s\S]*\}",
-        response
-    )
+    # Procura apenas o JSON
+    start = response.find("{")
+    end = response.rfind("}")
 
-    if not match:
+    if start == -1 or end == -1:
         raise HTTPException(
             status_code=500,
-            detail="JSON não encontrado na resposta da IA"
+            detail="IA não retornou JSON válido"
         )
 
-    try:
-        npc = json.loads(match.group())
-    except Exception as e:
-        print("Erro ao converter JSON:")
-        print(e)
-        print(match.group())
+    response = response[start:end + 1]
 
+    try:
+        npc = json.loads(response)
+    except Exception:
         raise HTTPException(
             status_code=500,
-            detail="JSON inválido retornado pela IA"
+            detail="IA retornou JSON inválido"
         )
 
     return npc
+
 @router.put("/{character_id}", response_model=CharacterResponse)
 def update_character_route(
     character_id: int,
