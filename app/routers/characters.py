@@ -19,6 +19,8 @@ from app.models.rpg_lore import RPGLore
 from typing import Optional
 import os
 import shutil
+from app.services.narraverse_ai import NarraverseAI
+import json
 
 router = APIRouter(prefix="/characters", tags=["Characters"])
 
@@ -206,7 +208,66 @@ def create_character_route(
 
     return create_character(db, current_user.id, rpg_id, character_data)
 
+@router.post("/{rpg_id}/generate-npc")
+def generate_npc(
+    rpg_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    ai = NarraverseAI()
 
+    prompt = """
+Você é um mestre de RPG.
+
+Crie um NPC interessante para um RPG.
+
+Responda SOMENTE com JSON válido.
+
+Não escreva explicações.
+Não escreva texto antes.
+Não escreva texto depois.
+Não utilize markdown.
+Não utilize ```json.
+
+Formato obrigatório:
+
+{
+  "name": "...",
+  "history": "..."
+}
+"""
+
+    response = ai.provider.generate_text(prompt)
+
+    print("=== RESPOSTA BRUTA ===")
+    print(response)
+
+    import re
+
+    match = re.search(
+        r"\{[\s\S]*\}",
+        response
+    )
+
+    if not match:
+        raise HTTPException(
+            status_code=500,
+            detail="JSON não encontrado na resposta da IA"
+        )
+
+    try:
+        npc = json.loads(match.group())
+    except Exception as e:
+        print("Erro ao converter JSON:")
+        print(e)
+        print(match.group())
+
+        raise HTTPException(
+            status_code=500,
+            detail="JSON inválido retornado pela IA"
+        )
+
+    return npc
 @router.put("/{character_id}", response_model=CharacterResponse)
 def update_character_route(
     character_id: int,
