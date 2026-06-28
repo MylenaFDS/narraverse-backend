@@ -197,3 +197,75 @@ Crie exatamente 5 possíveis cenas filhas.
         context: dict,
     ):
         raise NotImplementedError
+    
+    def generate_lore(
+    self,
+    category: str,
+    theme: str,
+    style: str | None = None,
+    required_elements: str | None = None,
+):
+        prompt = f"""
+    Você é a IA oficial do Narraverse.
+
+    REGRAS OBRIGATÓRIAS:
+
+    - Responda SOMENTE JSON.
+    - Responda SEMPRE em português do Brasil.
+    - Não explique nada.
+    - Não use markdown.
+    - Não escreva frases antes ou depois do JSON.
+    - Não utilize ```json.
+
+    Crie uma lore completa para um RPG.
+
+    Categoria:
+    {category}
+
+    Tema:
+    {theme}
+
+    Estilo:
+    {style or "Livre"}
+
+    Elementos obrigatórios:
+    {required_elements or "Nenhum"}
+
+    Formato obrigatório:
+
+    {{
+    "title": "...",
+    "description": "...",
+    "history": "...",
+    "culture": "...",
+    "appearance": "...",
+    "curiosities": "...",
+    "economy": "...",
+    "religion": "..."
+    }}
+
+    Observações:
+
+    - Se algum campo não fizer sentido para esta categoria, retorne uma string vazia ("").
+    - O título deve ser curto.
+    - A descrição deve ter entre 2 e 4 parágrafos.
+    - A história deve ser rica em detalhes.
+    - O conteúdo deve ser coerente com fantasia medieval, salvo indicação diferente no tema.
+    """
+
+        response = self.provider.generate_text(prompt)
+
+        try:
+            match = re.search(
+                r"\{.*\}",
+                response,
+                re.DOTALL,
+            )
+
+            if match:
+                return json.loads(match.group(0))
+
+            return {}
+
+        except Exception:
+            return {}
