@@ -8,6 +8,10 @@ class RPGLoreCreate(BaseModel):
     category: str
     visual_description: str | None = None
 
+    is_region: bool = False
+    # Novo
+    region_type: str | None = None
+
 
 class RPGLoreUpdate(BaseModel):
     title: str
@@ -15,12 +19,23 @@ class RPGLoreUpdate(BaseModel):
     category: Optional[str] = None
     visual_description: str | None = None
 
+    is_region: bool = False
+    # Novo
+    region_type: str | None = None
+
+
 class RPGLoreResponse(BaseModel):
     id: int
     title: str
     content: str
+
     category: Optional[str] = None
     visual_description: str | None = None
+
+    # Novos campos
+    is_region: bool
+    region_type: str | None = None
+
     author_id: int
     is_approved: bool
     is_suggestion: bool

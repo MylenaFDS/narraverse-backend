@@ -1,42 +1,78 @@
+# ===========================
 # Python
+# ===========================
 __pycache__/
-*.pyc
-*.pyo
-*.pyd
+*.py[cod]
+*$py.class
 
-# Virtual environment
+# ===========================
+# Virtualenv
+# ===========================
 venv/
 venv311/
-.env/
+.venv/
+env/
+
+# ===========================
+# Environment
+# ===========================
 .env
+.env.*
+!.env.example
 
-# Environment variables
-.env.local
-.env.development
-.env.production
-
-# Alembic cache
+# ===========================
+# Alembic
+# ===========================
 *.log
 
-# VSCode
+# ===========================
+# IDE
+# ===========================
 .vscode/
-
-# PyCharm
 .idea/
 
-# OS files
+# ===========================
+# OS
+# ===========================
 .DS_Store
 Thumbs.db
 
-# Test / coverage
+# ===========================
+# Coverage
+# ===========================
 .coverage
+.coverage.*
 htmlcov/
+.pytest_cache/
 
+# ===========================
 # Build
+# ===========================
 build/
 dist/
 *.egg-info/
+.eggs/
 
+# ===========================
 # Logs
+# ===========================
+logs/
 *.log
 
+# ===========================
+# Cache
+# ===========================
+.mypy_cache/
+.ruff_cache/
+.cache/
+
+# ===========================
+# Uploads temporários
+# ===========================
+uploads/tmp/
+
+# ===========================
+# SQLite (caso use em testes)
+# ===========================
+*.sqlite3
+*.db

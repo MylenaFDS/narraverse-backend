@@ -15,7 +15,17 @@ class RPGLore(Base):
     Text,
     nullable=True,
     )
+    
+    is_region = Column(
+    Boolean,
+    nullable=False,
+    default=False,
+    )
 
+    region_type = Column(
+        String(50),
+        nullable=True,
+    )
     rpg_id = Column(Integer, ForeignKey("rpgs.id"), nullable=False)
     author_id = Column(Integer, ForeignKey("users.id"), nullable=False)
 

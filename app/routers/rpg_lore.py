@@ -57,11 +57,20 @@ def create_lore(
             content=data.content,
             visual_description=data.visual_description,
             category=data.category,
-            rpg_id=rpg_id,
-            author_id=current_user.id,
-            is_approved=True,
-            is_suggestion=False
-)
+
+            is_region=data.is_region,
+            region_type=(
+                data.region_type
+                if data.is_region
+                else None
+        ),
+
+        rpg_id=rpg_id,
+        author_id=current_user.id,
+
+        is_approved=True,
+        is_suggestion=False,
+    )
 
     else:
         # verificar participação
@@ -91,7 +100,15 @@ def create_lore(
         lore = RPGLore(
             title=data.title,
             content=data.content,
+            visual_description=data.visual_description,
             category=data.category,
+
+            is_region=data.is_region,
+            region_type=(
+                data.region_type
+                if data.is_region
+                else None
+            ),
             rpg_id=rpg_id,
             author_id=current_user.id,
             is_approved=False,
@@ -102,7 +119,7 @@ def create_lore(
     db.commit()
     db.refresh(lore)
 
-    if lore.category == "Mundo" and lore.is_approved:
+    if lore.is_region and lore.is_approved:
         existing_region = (
             db.query(MapRegion)
             .filter(
@@ -442,6 +459,13 @@ def update_lore(
         data.visual_description
     )
     lore.category = data.category
+
+    lore.is_region = data.is_region
+    lore.region_type = (
+        data.region_type
+        if data.is_region
+        else None
+    )
 
     db.commit()
     db.refresh(lore)
