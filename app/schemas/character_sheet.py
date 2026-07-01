@@ -6,11 +6,31 @@ class CharacterSheetValueCreate(BaseModel):
     value: str
 
 
+# ===========================
+# Campo da ficha
+# ===========================
+
+class RPGSheetFieldSimple(BaseModel):
+    id: int
+
+    name: str
+
+    field_type: str
+
+    class Config:
+        from_attributes = True
+
+
+# ===========================
+# Valor da ficha
+# ===========================
+
 class CharacterSheetValueResponse(BaseModel):
     id: int
-    character_id: int
-    field_id: int
+
     value: str
+
+    field: RPGSheetFieldSimple
 
     class Config:
         from_attributes = True

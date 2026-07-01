@@ -1,6 +1,10 @@
 from pydantic import BaseModel
 from typing import Optional, List
 
+from app.schemas.character_sheet import (
+    CharacterSheetValueResponse,
+)
+
 
 class SheetValueInput(BaseModel):
     field_id: int
@@ -22,28 +26,32 @@ class CharacterCreate(BaseModel):
 
     image_url: Optional[str] = None
 
-    # ===========================
-    # NPC
-    # ===========================
-
     is_npc: bool = False
 
 
+# ===========================
+# Facção
+# ===========================
 
 class CharacterFactionResponse(BaseModel):
     id: int
+
     name: str
 
     class Config:
         from_attributes = True
 
 
+# ===========================
+# Response
+# ===========================
+
 class CharacterResponse(BaseModel):
     id: int
 
     name: str
 
-    description: Optional[str]
+    description: Optional[str] = None
 
     history: Optional[str] = None
 
@@ -51,7 +59,9 @@ class CharacterResponse(BaseModel):
 
     faction_id: Optional[int] = None
 
-    faction: Optional[CharacterFactionResponse] = None
+    faction: Optional[
+        CharacterFactionResponse
+    ] = None
 
     user_id: int
 
@@ -59,12 +69,11 @@ class CharacterResponse(BaseModel):
 
     image_url: Optional[str] = None
 
-    # ===========================
-    # NPC
-    # ===========================
-
     is_npc: bool
 
+    sheet_values: List[
+        CharacterSheetValueResponse
+    ] = []
 
     class Config:
         from_attributes = True

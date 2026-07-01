@@ -1,4 +1,4 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from app.models.character import Character
 from app.models.character_sheet_value import CharacterSheetValue
@@ -19,8 +19,6 @@ def create_character(
         image_url=data.image_url,
         user_id=user_id,
         rpg_id=rpg_id,
-
-        # NPC
         is_npc=data.is_npc,
     )
 
@@ -35,30 +33,65 @@ def create_character(
                 field_id=field.field_id,
                 value=field.value,
             )
+
             db.add(sheet_value)
 
         db.commit()
 
+    db.refresh(character)
+
+    character = (
+        db.query(Character)
+        .options(
+            joinedload(Character.faction),
+            joinedload(Character.world_lore),
+            joinedload(Character.sheet_values)
+            .joinedload(CharacterSheetValue.field),
+        )
+        .filter(Character.id == character.id)
+        .first()
+    )
+
     return character
 
 
-def list_characters(db: Session, rpg_id: int):
+def list_characters(
+    db: Session,
+    rpg_id: int,
+):
     return (
         db.query(Character)
+        .options(
+            joinedload(Character.faction),
+            joinedload(Character.world_lore),
+            joinedload(Character.sheet_values).joinedload(
+                CharacterSheetValue.field
+            ),
+        )
         .filter(
             Character.rpg_id == rpg_id,
-            Character.is_npc == False,
+            Character.is_npc.is_(False),
         )
         .all()
     )
 
 
-def list_npcs(db: Session, rpg_id: int):
+def list_npcs(
+    db: Session,
+    rpg_id: int,
+):
     return (
         db.query(Character)
+        .options(
+            joinedload(Character.faction),
+            joinedload(Character.world_lore),
+            joinedload(Character.sheet_values).joinedload(
+                CharacterSheetValue.field
+            ),
+        )
         .filter(
             Character.rpg_id == rpg_id,
-            Character.is_npc == True,
+            Character.is_npc.is_(True),
         )
         .all()
     )

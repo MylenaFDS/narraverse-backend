@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from app.db.session import get_db
 from app.models.rpg_participant import RPGParticipant
@@ -174,15 +174,14 @@ def get_public_character(
     } if character.faction else None,
     "owner_id": character.user_id,
     "owner_username": character.owner.username,
-    "sheet": [
+    "sheet_values": [
         {
-            "field_id": field.id,
-            "field_name": field.name,
-            "field_type": field.field_type,
+            "id": value.id,
+            "name": field.name,
             "value": value.value,
         }
         for value, field in sheet_values
-    ],
+],
 }
 
 @router.post("/{rpg_id}", response_model=CharacterResponse)
