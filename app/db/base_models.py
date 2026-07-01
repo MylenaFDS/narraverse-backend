@@ -30,3 +30,6 @@ from app.models.region_place import RegionPlace
 from app.models.region_scene import RegionScene
 from app.models.scene_location import SceneLocation
 from app.models.rpg_settings import RPGSettings
+# Inventory
+from app.models.item import Item
+from app.models.inventory_item import InventoryItem

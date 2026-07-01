@@ -28,6 +28,8 @@ from app.routers import region_scenes
 from app.routers import scene_locations
 from app.routers import rpg_settings
 from app.routers import ai
+from app.routers import inventory
+from app.routers import items
 
 # ✅ WEBSOCKETS
 from app.websockets.rpg_ws import router as ws_router
@@ -75,6 +77,8 @@ app.include_router(region_scenes.router)
 app.include_router(scene_locations.router)
 app.include_router(rpg_settings.router)
 app.include_router(ai.router)
+app.include_router(inventory.router)
+app.include_router(items.router)
 
 # 🔥 WS
 app.include_router(ws_router)

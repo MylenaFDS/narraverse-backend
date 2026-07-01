@@ -118,6 +118,12 @@ class Character(Base):
         cascade="all, delete-orphan",
     )
 
+    inventory_items = relationship(
+        "InventoryItem",
+        back_populates="character",
+        cascade="all, delete-orphan",
+    )
+
     __table_args__ = (
         Index(
             "idx_character_rpg_user",
